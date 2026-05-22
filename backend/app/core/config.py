@@ -1,11 +1,14 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+ROOT_ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=str(ROOT_ENV_PATH), extra="ignore")
 
     PROJECT_NAME: str = "Jefferson Cipher Service"
     API_V1_PREFIX: str = "/api/v1"

@@ -12,6 +12,8 @@ dependencies = [
     "uvicorn[standard]",
     "pydantic-settings",
     "psycopg[binary]",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
 ]
 
 [project.optional-dependencies]

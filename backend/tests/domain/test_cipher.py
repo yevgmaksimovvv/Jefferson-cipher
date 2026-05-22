@@ -61,6 +61,84 @@ def test_trace_contains_one_step_per_normalized_char() -> None:
     assert step.mode == "encrypt"
 
 
+def test_trace_reports_second_block_indices() -> None:
+    result = encrypt("HELLOWORLD", _disk_set(), _key())
+
+    step = result.trace[4]
+    assert step.block_index == 1
+    assert step.char_index == 0
+
+
+def test_decrypt_trace_mode_is_decrypt_for_all_steps() -> None:
+    result = decrypt("JGNNQYQTNF", _disk_set(), _key())
+
+    assert {step.mode for step in result.trace} == {"decrypt"}
+
+
+def test_sparse_disk_ids_work_by_id() -> None:
+    disk_set = DiskSet(
+        disks=(
+            Disk(id=10, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            Disk(id=20, sequence="BCDEFGHIJKLMNOPQRSTUVWXYZA"),
+            Disk(id=30, sequence="CDEFGHIJKLMNOPQRSTUVWXYZAB"),
+        )
+    )
+    key = CipherKey(disk_order=(10, 20, 30), offset=2)
+
+    result = encrypt("ABC", disk_set, key)
+
+    assert result.text == "CDE"
+    assert result.normalized_text == "ABC"
+
+
+def test_disk_set_tuple_order_does_not_override_disk_id_lookup() -> None:
+    ordered_disk_set = DiskSet(
+        disks=(
+            Disk(id=10, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            Disk(id=20, sequence="BCDEFGHIJKLMNOPQRSTUVWXYZA"),
+            Disk(id=30, sequence="CDEFGHIJKLMNOPQRSTUVWXYZAB"),
+        )
+    )
+    shuffled_disk_set = DiskSet(
+        disks=(
+            Disk(id=30, sequence="CDEFGHIJKLMNOPQRSTUVWXYZAB"),
+            Disk(id=10, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            Disk(id=20, sequence="BCDEFGHIJKLMNOPQRSTUVWXYZA"),
+        )
+    )
+    key = CipherKey(disk_order=(10, 20, 30), offset=2)
+
+    ordered_result = encrypt("ABC", ordered_disk_set, key)
+    shuffled_result = encrypt("ABC", shuffled_disk_set, key)
+
+    assert shuffled_result.text == ordered_result.text == "CDE"
+
+
+def test_negative_offset_round_trip_returns_normalized_plaintext() -> None:
+    disk_set = _disk_set()
+    key = _key(-1)
+
+    encrypted = encrypt("Hello, World!", disk_set, key)
+    decrypted = decrypt(encrypted.text, disk_set, key)
+
+    assert decrypted.text == "HELLOWORLD"
+
+
+def test_offset_26_with_identity_disks_is_identity() -> None:
+    disk_set = DiskSet(
+        disks=(
+            Disk(id=1, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            Disk(id=2, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            Disk(id=3, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            Disk(id=4, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+        )
+    )
+
+    result = encrypt("HELLOWORLD", disk_set, _key(26))
+
+    assert result.text == result.normalized_text == "HELLOWORLD"
+
+
 def test_offset_is_normalized_by_alphabet_length() -> None:
     disk_set = _disk_set()
     result_with_offset_2 = encrypt("HELLOWORLD", disk_set, _key(2))

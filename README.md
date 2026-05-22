@@ -18,6 +18,18 @@ pytest
 uvicorn app.main:app --reload
 ```
 
+## База данных
+
+- `DATABASE_URL` используется в контейнере и указывает на host `postgres`.
+- `ALEMBIC_DATABASE_URL` или `DATABASE_URL_LOCAL` используются для локального Alembic и указывают на `localhost`.
+
+```bash
+cp .env.example .env
+docker compose up -d postgres
+cd backend && ../.venv/bin/python -m alembic upgrade head
+cd .. && docker compose up --build -d
+```
+
 ## Pre-commit
 
 ```bash
