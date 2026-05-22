@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.domain.cipher.models import CipherKey, CipherResult
 from app.domain.cipher.service import decrypt, encrypt
-from app.repositories.disk_sets import get_disk_set_by_id
-from app.services.disk_sets import disk_set_model_to_domain
+from app.services.disk_sets import disk_set_model_to_domain, get_disk_set_by_id
 
 
 def _cipher_with_disk_set_id(
@@ -13,10 +12,11 @@ def _cipher_with_disk_set_id(
     disk_set_id: int,
     key: CipherKey,
     db: Session,
+    user_id: int | None,
     transform,
     _include_trace: bool,
 ) -> CipherResult | None:
-    disk_set = get_disk_set_by_id(db, disk_set_id)
+    disk_set = get_disk_set_by_id(db, disk_set_id, user_id=user_id)
     if disk_set is None:
         return None
     domain_disk_set = disk_set_model_to_domain(disk_set)
@@ -28,6 +28,7 @@ def encrypt_with_disk_set_id(
     disk_set_id: int,
     key: CipherKey,
     db: Session,
+    user_id: int | None = None,
     include_trace: bool = True,
 ) -> CipherResult | None:
     return _cipher_with_disk_set_id(
@@ -35,6 +36,7 @@ def encrypt_with_disk_set_id(
         disk_set_id=disk_set_id,
         key=key,
         db=db,
+        user_id=user_id,
         transform=encrypt,
         _include_trace=include_trace,
     )
@@ -45,6 +47,7 @@ def decrypt_with_disk_set_id(
     disk_set_id: int,
     key: CipherKey,
     db: Session,
+    user_id: int | None = None,
     include_trace: bool = True,
 ) -> CipherResult | None:
     return _cipher_with_disk_set_id(
@@ -52,6 +55,7 @@ def decrypt_with_disk_set_id(
         disk_set_id=disk_set_id,
         key=key,
         db=db,
+        user_id=user_id,
         transform=decrypt,
         _include_trace=include_trace,
     )

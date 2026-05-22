@@ -1,6 +1,6 @@
 import pytest
 from app.db.models import DiskModel, DiskSetModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 
@@ -107,7 +107,7 @@ def test_cascade_delete_removes_disks(db_session):
     db_session.commit()
 
     assert db_session.get(DiskSetModel, disk_set_id) is None
-    assert db_session.query(DiskModel).count() == 0
+    assert db_session.scalar(select(func.count()).select_from(DiskModel)) == 0
 
 
 def test_relationship_orders_disks_by_position(db_session):

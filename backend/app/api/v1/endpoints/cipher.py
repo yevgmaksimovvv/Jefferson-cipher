@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_optional_current_user
+from app.db.models import UserModel
 from app.db.session import get_db
 from app.domain.cipher.exceptions import CipherDomainError
 from app.domain.cipher.models import CipherKey, CipherResult, Disk, DiskSet
@@ -108,6 +110,7 @@ def decrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
 def encrypt_cipher_from_disk_set(
     payload: CipherByDiskSetRequest,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserModel | None, Depends(get_optional_current_user)],
 ) -> CipherResponse | JSONResponse:
     try:
         result = encrypt_with_disk_set_id(
@@ -118,6 +121,7 @@ def encrypt_cipher_from_disk_set(
                 offset=payload.key.offset,
             ),
             db=db,
+            user_id=current_user.id if current_user is not None else None,
             include_trace=payload.include_trace,
         )
     except CipherDomainError as error:
@@ -131,6 +135,7 @@ def encrypt_cipher_from_disk_set(
 def decrypt_cipher_from_disk_set(
     payload: CipherByDiskSetRequest,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserModel | None, Depends(get_optional_current_user)],
 ) -> CipherResponse | JSONResponse:
     try:
         result = decrypt_with_disk_set_id(
@@ -141,6 +146,7 @@ def decrypt_cipher_from_disk_set(
                 offset=payload.key.offset,
             ),
             db=db,
+            user_id=current_user.id if current_user is not None else None,
             include_trace=payload.include_trace,
         )
     except CipherDomainError as error:

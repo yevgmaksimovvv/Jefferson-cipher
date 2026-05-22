@@ -13,12 +13,13 @@ from app.db.session import get_db
 from app.repositories.users import get_user_by_id
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+optional_oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/auth/login",
+    auto_error=False,
+)
 
 
-def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    db: Annotated[Session, Depends(get_db)],
-) -> UserModel:
+def _get_user_from_token(token: str, db: Session) -> UserModel:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -44,3 +45,19 @@ def get_current_user(
         raise credentials_exception
 
     return user
+
+
+def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+) -> UserModel:
+    return _get_user_from_token(token, db)
+
+
+def get_optional_current_user(
+    token: Annotated[str | None, Depends(optional_oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+) -> UserModel | None:
+    if token is None:
+        return None
+    return _get_user_from_token(token, db)

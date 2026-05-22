@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Index, String, func, text
+from sqlalchemy import ForeignKey, Index, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -19,6 +19,11 @@ class DiskSetModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False)
+    owner_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
     alphabet: Mapped[str] = mapped_column(
         String(26),
         nullable=False,
