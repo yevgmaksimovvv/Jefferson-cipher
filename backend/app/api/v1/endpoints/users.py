@@ -6,12 +6,25 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import get_current_user
 from app.db.models import UserModel
+from app.schemas.cipher import ErrorResponse
 from app.schemas.user import UserResponse
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Current user",
+    description="Returns the authenticated user's public profile.",
+    response_description="Current user profile.",
+    responses={
+        401: {
+            "description": "Invalid or missing bearer token.",
+            "model": ErrorResponse,
+        }
+    },
+)
 def get_current_user_endpoint(
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> UserResponse:

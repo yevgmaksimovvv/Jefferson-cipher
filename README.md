@@ -25,5 +25,6 @@ python -m alembic upgrade head
 - Health endpoint: /api/v1/health
 
 ## Документация
+- [API](docs/api.md): HTTP contract, error codes и curl-примеры.
 - [Runtime](docs/runtime.md): конфигурация и эксплуатация.
 - [Security](docs/security.md): контракты безопасности.

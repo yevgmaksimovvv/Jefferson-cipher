@@ -16,6 +16,7 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
 )
+from app.schemas.cipher import ErrorDetailResponse, ErrorResponse
 from app.schemas.user import UserResponse
 from app.services.auth import (
     DuplicateEmailError,
@@ -38,7 +39,9 @@ def _error_response(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
-        content={"error": {"code": code, "message": message}},
+        content=ErrorResponse(
+            error=ErrorDetailResponse(code=code, message=message)
+        ).model_dump(),
         headers=headers,
     )
 
@@ -47,6 +50,19 @@ def _error_response(
     "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=UserResponse,
+    summary="Register user",
+    description="Creates a new user account and returns the public user profile.",
+    response_description="User created.",
+    responses={
+        409: {
+            "description": "Email already exists.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("auth", "RATE_LIMIT_AUTH_PER_MINUTE"))],
 )
 def register(
@@ -67,6 +83,21 @@ def register(
 @router.post(
     "/login",
     response_model=TokenResponse,
+    summary="Login user",
+    description=(
+        "Validates credentials and returns an access token plus a refresh token."
+    ),
+    response_description="Token pair issued.",
+    responses={
+        401: {
+            "description": "Invalid email or password.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("auth", "RATE_LIMIT_AUTH_PER_MINUTE"))],
 )
 def login(
@@ -104,6 +135,19 @@ def login(
 @router.post(
     "/refresh",
     response_model=TokenResponse,
+    summary="Refresh tokens",
+    description="Rotates a valid refresh token and returns a new token pair.",
+    response_description="Token pair issued.",
+    responses={
+        401: {
+            "description": "Invalid refresh token.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("refresh", "RATE_LIMIT_REFRESH_PER_MINUTE"))],
 )
 def refresh(
@@ -131,6 +175,20 @@ def refresh(
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
     response_model=None,
+    summary="Logout user",
+    description="Revokes a refresh token and returns no body.",
+    response_description="Refresh token revoked.",
+    responses={
+        401: {
+            "description": "Invalid refresh token.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+        204: {"description": "No content."},
+    },
     dependencies=[Depends(rate_limit("auth", "RATE_LIMIT_AUTH_PER_MINUTE"))],
 )
 def logout(

@@ -19,7 +19,12 @@ ALEMBIC_INI_PATH = BACKEND_ROOT / "alembic.ini"
 EXPECTED_DEFAULT_DISKS = 36
 
 
-@router.get("/health")
+@router.get(
+    "/health",
+    summary="Health check",
+    description="Liveness probe for the API process.",
+    response_description="Service is alive.",
+)
 def health() -> dict[str, str]:
     """Проверка доступности (Liveness probe) сервиса."""
     return {
@@ -68,7 +73,14 @@ def _ready_response(
     return JSONResponse(status_code=status_code, content=payload)
 
 
-@router.get("/ready", response_model=None)
+@router.get(
+    "/ready",
+    response_model=None,
+    summary="Readiness check",
+    description="Checks database connectivity, Alembic head, and seeded disk-set data.",
+    response_description="Readiness state for the service.",
+    responses={503: {"description": "Service is not ready."}},
+)
 def ready() -> JSONResponse:
     """Проверка готовности (Readiness probe): БД, миграций и данных."""
     db = None

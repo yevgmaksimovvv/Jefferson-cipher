@@ -11,7 +11,39 @@ from app.core.security_headers import SecurityHeadersMiddleware
 settings = get_settings()
 
 
-app = FastAPI(title=settings.PROJECT_NAME, version="0.1.0")
+app = FastAPI(
+    title="Jefferson Cipher Service",
+    version="0.1.0",
+    description=(
+        "Jefferson cipher API.\n\n"
+        "- persisted disk sets\n"
+        "- JWT auth + refresh tokens\n"
+        "- rate limiting\n"
+        "- readiness endpoint"
+    ),
+    openapi_tags=[
+        {
+            "name": "health",
+            "description": "Liveness and readiness probes.",
+        },
+        {
+            "name": "auth",
+            "description": "JWT registration, login, refresh, and logout.",
+        },
+        {
+            "name": "users",
+            "description": "Current authenticated user.",
+        },
+        {
+            "name": "cipher",
+            "description": "Stateless cipher operations and disk-set-backed ciphering.",
+        },
+        {
+            "name": "disk-sets",
+            "description": "Persisted disk-set CRUD and listing.",
+        },
+    ],
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,

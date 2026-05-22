@@ -92,6 +92,19 @@ def _disk_set_not_found_response() -> JSONResponse:
 @router.post(
     "/encrypt",
     response_model=CipherResponse,
+    summary="Encrypt text",
+    description="Encrypts text with an inline disk set and key.",
+    response_description="Cipher result.",
+    responses={
+        400: {
+            "description": "Cipher validation error.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
 )
 def encrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
@@ -105,6 +118,19 @@ def encrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
 @router.post(
     "/decrypt",
     response_model=CipherResponse,
+    summary="Decrypt text",
+    description="Decrypts text with an inline disk set and key.",
+    response_description="Cipher result.",
+    responses={
+        400: {
+            "description": "Cipher validation error.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
 )
 def decrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
@@ -118,6 +144,27 @@ def decrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
 @router.post(
     "/encrypt/from-disk-set",
     response_model=CipherResponse,
+    summary="Encrypt from disk set",
+    description="Encrypts text using a persisted disk set accessible to the caller.",
+    response_description="Cipher result.",
+    responses={
+        400: {
+            "description": "Cipher validation error.",
+            "model": ErrorResponse,
+        },
+        401: {
+            "description": "Invalid bearer token.",
+            "model": ErrorResponse,
+        },
+        404: {
+            "description": "Disk set not found or not accessible.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
 )
 def encrypt_cipher_from_disk_set(
@@ -147,6 +194,27 @@ def encrypt_cipher_from_disk_set(
 @router.post(
     "/decrypt/from-disk-set",
     response_model=CipherResponse,
+    summary="Decrypt from disk set",
+    description="Decrypts text using a persisted disk set accessible to the caller.",
+    response_description="Cipher result.",
+    responses={
+        400: {
+            "description": "Cipher validation error.",
+            "model": ErrorResponse,
+        },
+        401: {
+            "description": "Invalid bearer token.",
+            "model": ErrorResponse,
+        },
+        404: {
+            "description": "Disk set not found or not accessible.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
 )
 def decrypt_cipher_from_disk_set(

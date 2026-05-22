@@ -65,7 +65,22 @@ def _slug_exists_response() -> JSONResponse:
     return JSONResponse(status_code=409, content=payload.model_dump())
 
 
-@router.get("", response_model=list[DiskSetListItemResponse])
+@router.get(
+    "",
+    response_model=list[DiskSetListItemResponse],
+    summary="List disk sets",
+    description=(
+        "Returns accessible disk sets. Anonymous users see public/system sets only; "
+        "authenticated users also see their own private sets."
+    ),
+    response_description="List of accessible disk sets.",
+    responses={
+        401: {
+            "description": "Invalid bearer token.",
+            "model": ErrorResponse,
+        }
+    },
+)
 def list_disk_sets_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel | None, Depends(get_optional_current_user)],
@@ -79,7 +94,26 @@ def list_disk_sets_endpoint(
     ]
 
 
-@router.get("/{disk_set_id}", response_model=DiskSetResponse)
+@router.get(
+    "/{disk_set_id}",
+    response_model=DiskSetResponse,
+    summary="Get disk set",
+    description=(
+        "Returns an accessible disk set by ID. Foreign private disk sets are hidden "
+        "as 404."
+    ),
+    response_description="Disk set details.",
+    responses={
+        401: {
+            "description": "Invalid bearer token.",
+            "model": ErrorResponse,
+        },
+        404: {
+            "description": "Disk set not found or hidden.",
+            "model": ErrorResponse,
+        },
+    },
+)
 def get_disk_set_endpoint(
     disk_set_id: int,
     db: Annotated[Session, Depends(get_db)],
@@ -110,6 +144,31 @@ def get_disk_set_endpoint(
     "",
     status_code=status.HTTP_201_CREATED,
     response_model=DiskSetResponse,
+    summary="Create disk set",
+    description=(
+        "Creates a private disk set owned by the authenticated user. "
+        "owner_id is derived from the current user and is not accepted "
+        "in the request body."
+    ),
+    response_description="Created disk set.",
+    responses={
+        401: {
+            "description": "Missing or invalid bearer token.",
+            "model": ErrorResponse,
+        },
+        400: {
+            "description": "Disk set validation error.",
+            "model": ErrorResponse,
+        },
+        409: {
+            "description": "Disk set slug already exists.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("mutation", "RATE_LIMIT_MUTATION_PER_MINUTE"))],
 )
 def create_disk_set_endpoint(
@@ -136,6 +195,34 @@ def create_disk_set_endpoint(
 @router.patch(
     "/{disk_set_id}",
     response_model=DiskSetResponse,
+    summary="Update disk set",
+    description=(
+        "Updates an owned private disk set. owner_id is not accepted "
+        "in the request body."
+    ),
+    response_description="Updated disk set.",
+    responses={
+        401: {
+            "description": "Missing or invalid bearer token.",
+            "model": ErrorResponse,
+        },
+        400: {
+            "description": "Disk set validation error.",
+            "model": ErrorResponse,
+        },
+        404: {
+            "description": "Disk set not found.",
+            "model": ErrorResponse,
+        },
+        409: {
+            "description": "Disk set slug already exists.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+    },
     dependencies=[Depends(rate_limit("mutation", "RATE_LIMIT_MUTATION_PER_MINUTE"))],
 )
 def update_disk_set_endpoint(
@@ -160,6 +247,28 @@ def update_disk_set_endpoint(
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
     response_model=None,
+    summary="Delete disk set",
+    description="Deletes an owned private disk set and returns no body.",
+    response_description="Disk set deleted.",
+    responses={
+        401: {
+            "description": "Missing or invalid bearer token.",
+            "model": ErrorResponse,
+        },
+        404: {
+            "description": "Disk set not found.",
+            "model": ErrorResponse,
+        },
+        400: {
+            "description": "Disk set validation error.",
+            "model": ErrorResponse,
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "model": ErrorResponse,
+        },
+        204: {"description": "No content."},
+    },
     dependencies=[Depends(rate_limit("mutation", "RATE_LIMIT_MUTATION_PER_MINUTE"))],
 )
 def delete_disk_set_endpoint(
