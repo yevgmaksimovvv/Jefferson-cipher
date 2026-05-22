@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+      - id: debug-statements
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.5
+    hooks:
+      - id: ruff-check
+        args: [--fix, --config=backend/pyproject.toml]
+        files: ^backend/
+      - id: ruff-format
+        args: [--config=backend/pyproject.toml]
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: backend-pytest-picked
+        name: backend-pytest-picked
+        entry: cd backend && ../.venv/bin/python -m pytest --picked --mode=staged
+        language: system
+        pass_filenames: false
+        always_run: true
+        files: ^backend/
+      - id: backend-pytest-smoke
+        name: backend-pytest-smoke
+        entry: cd backend && ../.venv/bin/python -m pytest tests/api/test_health.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        files: ^backend/
