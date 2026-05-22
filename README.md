@@ -1,74 +1,57 @@
 # Jefferson Cipher Service
 
-Минимальный backend scaffold на FastAPI.
+Продакшн-фрэймворк для шифра Джефферсона.
 
-## Требования
+## Стек технологий
 
-- Python 3.10.11
+- Backend: Python 3.10.11, FastAPI, SQLAlchemy 2 (sync), Alembic, PostgreSQL.
+- Тестирование и инструменты: pytest, ruff, pre-commit.
 
-## Локальный запуск
+## Карта документации
 
-```bash
-python3.10 -m venv .venv
-source .venv/bin/activate
-python --version
-cd backend
-pip install -e ".[dev]"
-pytest
-uvicorn app.main:app --reload
-```
+- [Архитектура](docs/architecture.md): Обзор компонентов системы и границ слоев.
+- [API Reference](docs/api.md): Эндпоинты и контракты.
+- [Runtime Guide](docs/runtime.md): Настройка, конфигурация и управление через docker-compose.
+- [Testing Guide](docs/testing.md): Запуск тестов и валидация.
+- [Security Guide](docs/security.md): Аутентификация, владение ресурсами и контракты безопасности.
 
-## База данных
+## Быстрый старт
 
-- `DATABASE_URL` используется в контейнере и указывает на host `postgres`.
-- `ALEMBIC_DATABASE_URL` или `DATABASE_URL_LOCAL` используются для локального Alembic и указывают на `localhost`.
+1. **Установка зависимостей**:
+   ```bash
+   python3.10 -m venv .venv
+   source .venv/bin/activate
+   cd backend
+   pip install -e ".[dev]"
+   ```
 
-```bash
-test -f .env || cp .env.example .env
-docker compose up -d postgres
-cd backend && ../.venv/bin/python -m alembic upgrade head
-cd backend && ../.venv/bin/python -m app.db.init_db
-cd .. && docker compose up --build -d
-```
+2. **Настройка окружения**:
+   - Создайте файл `.env` на основе `.env.example`.
+   - Обновите переменные в `.env` (например, `SECRET_KEY`).
 
-Auth settings:
+3. **Запуск локального окружения**:
+   ```bash
+   docker compose up -d postgres
+   cd backend && ../.venv/bin/python -m alembic upgrade head
+   cd backend && ../.venv/bin/python -m app.db.init_db
+   cd .. && docker compose up --build -d
+   ```
 
-- `SECRET_KEY` may be a placeholder in local/dev.
-- The default local `SECRET_KEY` is valid if it is at least 32 bytes long.
-- For production, replace `SECRET_KEY` with a random secret, for example:
+4. **Проверка**:
+   ```bash
+   curl -s http://localhost:8000/api/v1/health
+   ```
 
-```bash
-openssl rand -hex 32
-```
+5. **Остановка**:
+   ```bash
+   docker compose down
+   ```
 
-- `ACCESS_TOKEN_EXPIRE_MINUTES` controls access token TTL.
-- `REFRESH_TOKEN_EXPIRE_DAYS` controls refresh token TTL.
-- Both TTL values must be greater than 0.
-- Do not overwrite `.env`; use:
-
-```bash
-test -f .env || cp .env.example .env
-```
-
-## Pre-commit
+## Локальные проверки
 
 ```bash
-cd backend
-../.venv/bin/python -m pip install -e ".[dev]"
-cd ..
-.venv/bin/python -m pre_commit install
+cd backend && ../.venv/bin/python -m pytest
+cd backend && ../.venv/bin/python -m ruff check .
+cd backend && ../.venv/bin/python -m ruff format --check .
 .venv/bin/python -m pre_commit run --all-files
 ```
-
-## Проверка
-
-```bash
-.venv/bin/python --version
-cd backend && ../.venv/bin/python -m pytest
-docker compose up --build
-curl http://localhost:8000/api/v1/health
-```
-
-## Health
-
-`GET /api/v1/health`

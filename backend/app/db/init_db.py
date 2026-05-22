@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+import sys
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -15,6 +18,8 @@ DEFAULT_DISK_SEQUENCES: tuple[str, ...] = tuple(
     DEFAULT_ALPHABET[::-1][index:] + DEFAULT_ALPHABET[::-1][:index]
     for index in range(10)
 )
+
+logger = logging.getLogger(__name__)
 
 
 def validate_default_disk_sequences() -> None:
@@ -97,8 +102,18 @@ def initialize_database() -> DiskSetModel:
 
 
 def main() -> int:
+    if not any(
+        isinstance(handler, logging.StreamHandler)
+        and getattr(handler, "stream", None) is sys.stdout
+        for handler in logger.handlers
+    ):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
     disk_set = initialize_database()
-    print(
+    logger.info(
         "Seeded disk set: "
         f"id={disk_set.id} slug={disk_set.slug} disks={len(disk_set.disks)}"
     )
