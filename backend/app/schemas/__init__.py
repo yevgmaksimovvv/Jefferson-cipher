@@ -1,3 +1,4 @@
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from app.schemas.cipher import (
     CipherKeyRequest,
     CipherRequest,
@@ -8,14 +9,19 @@ from app.schemas.cipher import (
     ErrorDetailResponse,
     ErrorResponse,
 )
+from app.schemas.user import UserResponse
 
 __all__ = [
     "CipherKeyRequest",
     "CipherRequest",
     "CipherResponse",
+    "LoginRequest",
     "CipherStepResponse",
     "DiskRequest",
     "DiskSetRequest",
+    "RegisterRequest",
+    "TokenResponse",
+    "UserResponse",
     "ErrorDetailResponse",
     "ErrorResponse",
 ]

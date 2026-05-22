@@ -31,6 +31,12 @@ cd backend && ../.venv/bin/python -m app.db.init_db
 cd .. && docker compose up --build -d
 ```
 
+For a real deployment, replace `SECRET_KEY` with a random secret, for example:
+
+```bash
+openssl rand -hex 32
+```
+
 ## Pre-commit
 
 ```bash

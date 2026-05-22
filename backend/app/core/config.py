@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Jefferson Cipher Service"
     API_V1_PREFIX: str = "/api/v1"
     ENVIRONMENT: str = "local"
+    SECRET_KEY: str = "change-me-in-local-dev-secret-key-32-bytes-minimum"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ALGORITHM: str = "HS256"
     DATABASE_URL: str = ""
     BACKEND_CORS_ORIGINS: list[str] = Field(
         default_factory=lambda: [

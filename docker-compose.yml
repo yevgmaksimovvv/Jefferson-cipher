@@ -21,7 +21,7 @@ services:
       start_period: 5s
 
   backend-init:
-    build: ./backend
+    image: jefferson-cipher-backend:latest
     env_file:
       - .env
     environment:
@@ -33,7 +33,10 @@ services:
     restart: "no"
 
   backend:
-    build: ./backend
+    image: jefferson-cipher-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     env_file:
