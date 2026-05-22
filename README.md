@@ -1,10 +1,11 @@
 # Jefferson Cipher Service
 
-Продакшн-фрэймворк для шифра Джефферсона.
+Сервис для шифра Джефферсона.
 
 ## Стек технологий
 
 - Backend: Python 3.10.11, FastAPI, SQLAlchemy 2 (sync), Alembic, PostgreSQL.
+- Docker Compose also includes Redis for the rate limiter.
 - Тестирование и инструменты: pytest, ruff, pre-commit.
 
 ## Карта документации

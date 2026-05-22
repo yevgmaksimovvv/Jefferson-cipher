@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
-from app.core.rate_limit import RateLimitExceeded
+from app.core.rate_limit import RateLimiterUnavailable, RateLimitExceeded
 from app.core.request_id import RequestIdMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 
@@ -39,6 +39,21 @@ async def rate_limit_exceeded_handler(
             }
         },
         headers=headers or None,
+    )
+
+
+@app.exception_handler(RateLimiterUnavailable)
+async def rate_limiter_unavailable_handler(
+    request: Request, exc: RateLimiterUnavailable
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": {
+                "code": "RATE_LIMITER_UNAVAILABLE",
+                "message": "Rate limiter unavailable",
+            }
+        },
     )
 
 
