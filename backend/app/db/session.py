@@ -12,6 +12,7 @@ from app.core.config import get_settings
 
 
 def get_database_url(database_url: str | None = None) -> str:
+    """Определяет URL базы данных из параметров, настроек или переменных окружения."""
     resolved = (
         database_url or get_settings().DATABASE_URL or os.getenv("DATABASE_URL", "")
     )
@@ -28,10 +29,12 @@ def _cached_engine(database_url: str) -> Engine:
 
 
 def get_engine(database_url: str | None = None) -> Engine:
+    """Создаёт или возвращает кэшированный SQLAlchemy Engine."""
     return _cached_engine(get_database_url(database_url))
 
 
 def get_session_factory(database_url: str | None = None) -> sessionmaker[Session]:
+    """Создаёт фабрику сессий SQLAlchemy."""
     return sessionmaker(
         bind=get_engine(database_url),
         autoflush=False,
@@ -40,6 +43,7 @@ def get_session_factory(database_url: str | None = None) -> sessionmaker[Session
 
 
 def get_db() -> Iterator[Session]:
+    """Генератор для получения сессии БД в зависимостях FastAPI."""
     db = get_session_factory()()
     try:
         yield db

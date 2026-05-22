@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.core.audit import log_audit_event
+from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.schemas.auth import (
     LoginRequest,
@@ -45,6 +47,7 @@ def _error_response(
     "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=UserResponse,
+    dependencies=[Depends(rate_limit("auth", "RATE_LIMIT_AUTH_PER_MINUTE"))],
 )
 def register(
     payload: RegisterRequest,
@@ -61,13 +64,23 @@ def register(
     return UserResponse(id=user.id, email=user.email, is_active=user.is_active)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit("auth", "RATE_LIMIT_AUTH_PER_MINUTE"))],
+)
 def login(
     payload: LoginRequest,
     db: Annotated[Session, Depends(get_db)],
+    request: Request,
 ) -> TokenResponse | JSONResponse:
     user = authenticate_user(db, payload.email, payload.password)
     if user is None:
+        log_audit_event(
+            "auth.login.failure",
+            email=payload.email.lower(),
+            request_id=getattr(request.state, "request_id", None),
+        )
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={
@@ -79,16 +92,31 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    log_audit_event(
+        "auth.login.success",
+        user_id=user.id,
+        email=user.email,
+        request_id=getattr(request.state, "request_id", None),
+    )
     return issue_token_pair(db, user)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit("refresh", "RATE_LIMIT_REFRESH_PER_MINUTE"))],
+)
 def refresh(
     payload: RefreshRequest,
     db: Annotated[Session, Depends(get_db)],
+    request: Request,
 ) -> TokenResponse | JSONResponse:
     try:
-        return refresh_token_pair(db, payload.refresh_token)
+        return refresh_token_pair(
+            db,
+            payload.refresh_token,
+            request_id=getattr(request.state, "request_id", None),
+        )
     except InvalidRefreshTokenError:
         return _error_response(
             "INVALID_REFRESH_TOKEN",
@@ -103,6 +131,7 @@ def refresh(
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
     response_model=None,
+    dependencies=[Depends(rate_limit("auth", "RATE_LIMIT_AUTH_PER_MINUTE"))],
 )
 def logout(
     payload: LogoutRequest,

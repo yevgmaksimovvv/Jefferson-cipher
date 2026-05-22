@@ -6,6 +6,7 @@ _MVP_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def normalize_text(text: str) -> str:
+    """Приводит текст к верхнему регистру и удаляет символы, не входящие в алфавит."""
     normalized = "".join(char for char in text.upper() if char in _MVP_ALPHABET)
     if not normalized:
         raise EmptyTextError
@@ -13,14 +14,17 @@ def normalize_text(text: str) -> str:
 
 
 def encrypt(text: str, disk_set: DiskSet, key: CipherKey) -> CipherResult:
+    """Шифрует текст с использованием набора дисков и ключа."""
     return _transform(text, disk_set, key, mode="encrypt")
 
 
 def decrypt(text: str, disk_set: DiskSet, key: CipherKey) -> CipherResult:
+    """Дешифрует текст с использованием набора дисков и ключа."""
     return _transform(text, disk_set, key, mode="decrypt")
 
 
 def _transform(text: str, disk_set: DiskSet, key: CipherKey, mode: str) -> CipherResult:
+    """Внутренняя функция для выполнения преобразования."""
     validate_disk_set(disk_set)
     validate_key(key, disk_set)
     normalized_text = normalize_text(text)

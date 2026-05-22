@@ -14,14 +14,17 @@ password_hash = PasswordHash.recommended()
 
 
 def hash_password(password: str) -> str:
+    """Хеширует пароль с использованием рекомендованного алгоритма."""
     return password_hash.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Проверяет соответствие открытого пароля его хешу."""
     return password_hash.verify(plain_password, hashed_password)
 
 
 def create_access_token(subject: str, expires_delta: timedelta | None = None) -> str:
+    """Создаёт JWT access token."""
     settings = get_settings()
     expire = datetime.now(timezone.utc) + (
         expires_delta
@@ -33,6 +36,7 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
+    """Декодирует JWT access token и проверяет его валидность."""
     settings = get_settings()
     return jwt.decode(
         token,
@@ -42,8 +46,10 @@ def decode_access_token(token: str) -> dict[str, Any]:
 
 
 def generate_refresh_token() -> str:
+    """Генерирует криптографически стойкий opaque refresh token."""
     return secrets.token_urlsafe(64)
 
 
 def hash_refresh_token(token: str) -> str:
+    """Вычисляет SHA-256 хеш refresh-токена для хранения в БД."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()

@@ -21,11 +21,13 @@ class FakeSession:
         self,
         *,
         fail_connect: bool = False,
+        fail_migrations: bool = False,
         revision: str = "0004",
         disks_count: int = 36,
         missing_seed: bool = False,
     ):
         self.fail_connect = fail_connect
+        self.fail_migrations = fail_migrations
         self.revision = revision
         self.disks_count = disks_count
         self.missing_seed = missing_seed
@@ -38,6 +40,8 @@ class FakeSession:
         if "SELECT 1" in query:
             return FakeResult(1)
         if "FROM alembic_version" in query:
+            if self.fail_migrations:
+                raise health_module.SQLAlchemyError("table missing")
             return FakeResult(self.revision)
         raise AssertionError(f"Unexpected statement: {query}")
 
@@ -100,6 +104,26 @@ def test_ready_endpoint_returns_not_ready_when_migrations_do_not_match_head(
         health_module, "get_session_factory", lambda: lambda: fake_session
     )
     monkeypatch.setattr(health_module, "_get_alembic_head_revision", lambda: "0004")
+
+    response = client.get("/api/v1/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "not_ready",
+        "database": "ok",
+        "migrations": "error",
+        "seed": "unknown",
+    }
+    assert fake_session.closed is True
+
+
+def test_ready_endpoint_returns_not_ready_when_migrations_query_fails(
+    client, monkeypatch
+):
+    fake_session = FakeSession(fail_migrations=True)
+    monkeypatch.setattr(
+        health_module, "get_session_factory", lambda: lambda: fake_session
+    )
 
     response = client.get("/api/v1/ready")
 

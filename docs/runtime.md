@@ -8,6 +8,11 @@
 - `SECRET_KEY`: >= 32 байт.
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
 - `REFRESH_TOKEN_EXPIRE_DAYS`
+- `RATE_LIMIT_AUTH_PER_MINUTE`
+- `RATE_LIMIT_REFRESH_PER_MINUTE`
+- `RATE_LIMIT_CIPHER_PER_MINUTE`
+- `RATE_LIMIT_MUTATION_PER_MINUTE`
+- Rate limiting сейчас in-memory и подходит только для single-process/dev runtime; для multi-worker/prod нужен shared store.
 
 ## Сервисы Docker
 - `postgres`: База данных.
@@ -24,5 +29,3 @@ docker compose up --build -d
 curl -s http://localhost:8000/api/v1/health
 docker compose down
 ```
-
-**Не копируйте** `.env` поверх существующих файлов без необходимости, **не запускайте** `docker compose down -v`, если не планируете полную очистку данных.

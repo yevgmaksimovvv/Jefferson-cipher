@@ -447,6 +447,37 @@ def test_create_rejects_owner_id_field(db_client, db_session) -> None:
     )
 
 
+def test_patch_rejects_owner_id_field(db_session, db_client) -> None:
+    user = _create_user(db_session, "owner@example.com")
+    created = _create_disk_set(db_client, user).json()
+
+    response = db_client.patch(
+        f"/api/v1/disk-sets/{created['id']}",
+        json={"owner_id": 999},
+        headers=_auth_headers(user),
+    )
+
+    assert response.status_code == 422
+
+
+def test_patch_own_disk_set_does_not_change_owner_id_in_db(
+    db_session, db_client
+) -> None:
+    user = _create_user(db_session, "owner@example.com")
+    created = _create_disk_set(db_client, user).json()
+
+    # We send a PATCH that is valid otherwise
+    response = db_client.patch(
+        f"/api/v1/disk-sets/{created['id']}",
+        json={"name": "New Name"},
+        headers=_auth_headers(user),
+    )
+    assert response.status_code == 200
+
+    disk_set = _owned_disk_set_model(db_session, created["id"])
+    assert disk_set.owner_id == user.id
+
+
 def test_patch_rejects_empty_payload(db_session, db_client) -> None:
     user = _create_user(db_session, "owner@example.com")
     created = _create_disk_set(db_client, user).json()

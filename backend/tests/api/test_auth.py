@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 import jwt
 from app.core.config import get_settings
 from app.db.init_db import seed_default_disk_set
@@ -54,6 +56,115 @@ def test_duplicate_register_returns_409_stable_error_shape(db_client) -> None:
             "message": "Email already registered",
         }
     }
+
+
+def test_duplicate_register_with_different_case_returns_409(db_client) -> None:
+    db_client.post(
+        "/api/v1/auth/register",
+        json={"email": "case@example.com", "password": "password123"},
+    )
+
+    response = db_client.post(
+        "/api/v1/auth/register",
+        json={"email": "CASE@EXAMPLE.COM", "password": "password123"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "EMAIL_ALREADY_REGISTERED"
+
+
+def test_me_with_expired_token_returns_401(db_client) -> None:
+    settings = get_settings()
+    token = jwt.encode(
+        {
+            "sub": "1",
+            "exp": datetime.utcnow() - timedelta(minutes=1),
+        },
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+
+    response = db_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Could not validate credentials"
+
+
+def test_me_with_wrong_secret_returns_401(db_client) -> None:
+    settings = get_settings()
+    token = jwt.encode(
+        {
+            "sub": "1",
+            "exp": datetime.utcnow() + timedelta(minutes=15),
+        },
+        "wrong-secret-key-at-least-32-bytes-long",
+        algorithm=settings.ALGORITHM,
+    )
+
+    response = db_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_me_with_missing_sub_returns_401(db_client) -> None:
+    settings = get_settings()
+    token = jwt.encode(
+        {
+            "exp": datetime.utcnow() + timedelta(minutes=15),
+        },
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+
+    response = db_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_me_with_non_int_sub_returns_401(db_client) -> None:
+    settings = get_settings()
+    token = jwt.encode(
+        {
+            "sub": "not-an-int",
+            "exp": datetime.utcnow() + timedelta(minutes=15),
+        },
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+
+    response = db_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_me_with_malformed_auth_header_returns_401(db_client) -> None:
+    response = db_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": "Bearer malformed.token.here"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_me_with_wrong_auth_scheme_returns_401(db_client) -> None:
+    response = db_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": "Token some-token"},
+    )
+
+    assert response.status_code == 401
 
 
 def test_login_with_correct_password_returns_bearer_token(db_client) -> None:

@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class ErrorCode(str, Enum):
+    """Коды ошибок API."""
+
     VALIDATION_ERROR = "validation_error"
     NOT_FOUND = "not_found"
     UNAUTHORIZED = "unauthorized"

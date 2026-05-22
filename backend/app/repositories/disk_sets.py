@@ -8,13 +8,17 @@ from app.schemas.disk_set import DiskSetDiskRequest
 
 
 def list_disk_sets(db: Session) -> list[DiskSetModel]:
+    """Возвращает список всех публичных наборов дисков."""
     return list_accessible_disk_sets(db, user_id=None)
 
 
 def list_accessible_disk_sets(
     db: Session,
     user_id: int | None,
+    limit: int = 50,
+    offset: int = 0,
 ) -> list[DiskSetModel]:
+    """Возвращает список доступных пользователю наборов: публичные и свои."""
     stmt = select(DiskSetModel).options(selectinload(DiskSetModel.disks))
     if user_id is None:
         stmt = stmt.where(DiskSetModel.owner_id.is_(None))
@@ -26,6 +30,7 @@ def list_accessible_disk_sets(
             )
         )
     stmt = stmt.order_by(DiskSetModel.id)
+    stmt = stmt.offset(offset).limit(limit)
     return db.scalars(stmt).all()
 
 
@@ -34,6 +39,7 @@ def get_accessible_disk_set_by_id(
     disk_set_id: int,
     user_id: int | None,
 ) -> DiskSetModel | None:
+    """Возвращает набор дисков по ID, если он доступен пользователю."""
     stmt = (
         select(DiskSetModel)
         .options(selectinload(DiskSetModel.disks))
@@ -52,14 +58,26 @@ def get_accessible_disk_set_by_id(
 
 
 def get_disk_set_by_id(db: Session, disk_set_id: int) -> DiskSetModel | None:
+    """Возвращает публичный набор дисков по его ID."""
     return get_accessible_disk_set_by_id(db, disk_set_id, user_id=None)
 
 
 def get_disk_set_by_slug(db: Session, slug: str) -> DiskSetModel | None:
+    """Возвращает набор дисков по его слагу (slug)."""
     stmt = (
         select(DiskSetModel)
         .options(selectinload(DiskSetModel.disks))
         .where(DiskSetModel.slug == slug)
+    )
+    return db.scalar(stmt)
+
+
+def get_any_disk_set_by_id(db: Session, disk_set_id: int) -> DiskSetModel | None:
+    """Возвращает набор дисков по ID без фильтра видимости."""
+    stmt = (
+        select(DiskSetModel)
+        .options(selectinload(DiskSetModel.disks))
+        .where(DiskSetModel.id == disk_set_id)
     )
     return db.scalar(stmt)
 
@@ -69,6 +87,7 @@ def slug_exists(
     slug: str,
     exclude_disk_set_id: int | None = None,
 ) -> bool:
+    """Проверяет существование слага в базе данных."""
     stmt = select(DiskSetModel.id).where(DiskSetModel.slug == slug)
     if exclude_disk_set_id is not None:
         stmt = stmt.where(DiskSetModel.id != exclude_disk_set_id)
@@ -83,6 +102,7 @@ def create_owned_disk_set(
     alphabet: str,
     disks: list[DiskSetDiskRequest],
 ) -> DiskSetModel:
+    """Создаёт новый приватный набор дисков для указанного владельца."""
     disk_set = DiskSetModel(
         name=name,
         slug=slug,
@@ -102,6 +122,7 @@ def get_owned_private_disk_set_by_id(
     disk_set_id: int,
     owner_id: int,
 ) -> DiskSetModel | None:
+    """Возвращает приватный набор дисков по ID, проверяя владение."""
     stmt = (
         select(DiskSetModel)
         .options(selectinload(DiskSetModel.disks))
@@ -124,6 +145,7 @@ def update_owned_disk_set(
     alphabet: str | None = None,
     disks: list[DiskSetDiskRequest] | None = None,
 ) -> DiskSetModel | None:
+    """Обновляет данные приватного набора дисков."""
     disk_set = get_owned_private_disk_set_by_id(db, disk_set_id, owner_id)
     if disk_set is None:
         return None
@@ -150,6 +172,7 @@ def delete_owned_disk_set(
     disk_set_id: int,
     owner_id: int,
 ) -> bool:
+    """Удаляет приватный набор дисков."""
     disk_set = get_owned_private_disk_set_by_id(db, disk_set_id, owner_id)
     if disk_set is None:
         return False

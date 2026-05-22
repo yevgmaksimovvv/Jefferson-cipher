@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class UserModel(Base):
+    """Модель пользователя системы."""
+
     __tablename__ = "users"
     __table_args__ = (Index("ix_users_email", "email", unique=True),)
 

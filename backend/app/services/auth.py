@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.audit import log_audit_event
 from app.core.config import get_settings
 from app.core.security import (
     create_access_token,
@@ -24,22 +25,30 @@ from app.schemas.auth import TokenResponse
 
 
 class DuplicateEmailError(Exception):
+    """Ошибка: пользователь с таким email уже существует."""
+
     pass
 
 
 class InvalidCredentialsError(Exception):
+    """Ошибка: неверный email или пароль."""
+
     pass
 
 
 class InvalidRefreshTokenError(Exception):
+    """Ошибка: невалидный или отозванный refresh-токен."""
+
     pass
 
 
 def normalize_email(email: str) -> str:
+    """Приводит email к нижнему регистру и удаляет лишние пробелы."""
     return email.strip().lower()
 
 
 def register_user(db: Session, email: str, password: str) -> UserModel:
+    """Регистрирует нового пользователя."""
     normalized_email = normalize_email(email)
     if get_user_by_email(db, normalized_email) is not None:
         raise DuplicateEmailError
@@ -98,7 +107,12 @@ def issue_token_pair(db: Session, user: UserModel) -> TokenResponse:
     )
 
 
-def refresh_token_pair(db: Session, refresh_token: str) -> TokenResponse:
+def refresh_token_pair(
+    db: Session,
+    refresh_token: str,
+    *,
+    request_id: str | None = None,
+) -> TokenResponse:
     token_hash = hash_refresh_token(refresh_token)
     stored_refresh_token = get_refresh_token_by_hash(db, token_hash)
     if stored_refresh_token is None:
@@ -108,6 +122,12 @@ def refresh_token_pair(db: Session, refresh_token: str) -> TokenResponse:
         stored_refresh_token.revoked_at is not None
         or stored_refresh_token.expires_at <= datetime.utcnow()
     ):
+        if stored_refresh_token.revoked_at is not None:
+            log_audit_event(
+                "auth.refresh.replay",
+                user_id=stored_refresh_token.user_id,
+                request_id=request_id,
+            )
         raise InvalidRefreshTokenError
 
     user = get_user_by_id(db, stored_refresh_token.user_id)

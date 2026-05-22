@@ -21,6 +21,7 @@ EXPECTED_DEFAULT_DISKS = 36
 
 @router.get("/health")
 def health() -> dict[str, str]:
+    """Проверка доступности (Liveness probe) сервиса."""
     return {
         "status": "ok",
         "service": "jefferson-cipher-service",
@@ -29,6 +30,7 @@ def health() -> dict[str, str]:
 
 
 def _get_alembic_head_revision() -> str:
+    """Возвращает последнюю ревизию миграций из Alembic."""
     config = Config(str(ALEMBIC_INI_PATH))
     config.set_main_option("script_location", str(BACKEND_ROOT / "alembic"))
     script = ScriptDirectory.from_config(config)
@@ -43,6 +45,7 @@ def _build_ready_payload(
     migrations: str,
     seed: str,
 ) -> dict[str, str]:
+    """Формирует JSON-ответ о готовности сервиса."""
     status = (
         "ready" if (database, migrations, seed) == ("ok", "ok", "ok") else "not_ready"
     )
@@ -59,6 +62,7 @@ def _ready_response(
     migrations: str,
     seed: str,
 ) -> JSONResponse:
+    """Возвращает HTTP-ответ с информацией о готовности БД и данных."""
     payload = _build_ready_payload(database, migrations, seed)
     status_code = 200 if payload["status"] == "ready" else 503
     return JSONResponse(status_code=status_code, content=payload)
@@ -66,6 +70,7 @@ def _ready_response(
 
 @router.get("/ready", response_model=None)
 def ready() -> JSONResponse:
+    """Проверка готовности (Readiness probe): БД, миграций и данных."""
     db = None
     try:
         session_factory = get_session_factory()

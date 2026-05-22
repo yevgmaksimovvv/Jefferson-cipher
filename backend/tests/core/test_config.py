@@ -6,6 +6,9 @@ from app.core import config as config_module
 
 @pytest.fixture()
 def isolated_settings(monkeypatch, tmp_path):
+    for key in config_module.Settings.model_fields:
+        monkeypatch.delenv(key, raising=False)
+
     monkeypatch.setattr(
         config_module.Settings,
         "model_config",

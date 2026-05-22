@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class RefreshTokenModel(Base):
+    """Модель для хранения хешей refresh-токенов и управления их жизненным циклом."""
+
     __tablename__ = "refresh_tokens"
     __table_args__ = (
         Index("ix_refresh_tokens_token_hash", "token_hash", unique=True),

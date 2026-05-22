@@ -16,6 +16,9 @@ from app.repositories.disk_sets import (
     slug_exists,
     update_owned_disk_set,
 )
+from app.repositories.disk_sets import (
+    get_any_disk_set_by_id as get_any_disk_set_by_id_repo,
+)
 from app.schemas.disk_set import (
     DiskResponse,
     DiskSetCreateRequest,
@@ -42,8 +45,19 @@ def _ordered_disks(model: DiskSetModel):
     return sorted(model.disks, key=lambda disk: disk.position)
 
 
-def list_disk_sets(db: Session, user_id: int | None) -> list[DiskSetModel]:
-    return list_accessible_disk_sets(db, user_id=user_id)
+def list_disk_sets(
+    db: Session,
+    user_id: int | None,
+    *,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[DiskSetModel]:
+    return list_accessible_disk_sets(
+        db,
+        user_id=user_id,
+        limit=limit,
+        offset=offset,
+    )
 
 
 def get_disk_set_by_id(
@@ -52,6 +66,10 @@ def get_disk_set_by_id(
     user_id: int | None,
 ) -> DiskSetModel | None:
     return get_accessible_disk_set_by_id(db, disk_set_id, user_id=user_id)
+
+
+def get_any_disk_set_by_id(db: Session, disk_set_id: int) -> DiskSetModel | None:
+    return get_any_disk_set_by_id_repo(db, disk_set_id)
 
 
 def disk_set_model_to_domain(model: DiskSetModel) -> DiskSet:

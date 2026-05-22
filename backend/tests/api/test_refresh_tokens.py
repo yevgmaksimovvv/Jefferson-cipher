@@ -107,6 +107,58 @@ def test_refresh_db_stores_only_token_hash_and_rotated_link(
     assert old_row.replaced_by_token_id == new_row.id
 
 
+def test_refresh_with_empty_token_returns_401(db_client) -> None:
+    response = db_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": ""},
+    )
+
+    # Current service returns 401 for unknown/empty token
+    assert response.status_code == 401
+
+
+def test_refresh_response_does_not_contain_token_hash(db_client) -> None:
+    token_pair = _register_and_login(db_client, "no-hash@example.com")
+
+    refresh_response = db_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": token_pair["refresh_token"]},
+    )
+
+    assert refresh_response.status_code == 200
+    body = refresh_response.json()
+    assert "token_hash" not in body
+
+
+def test_logout_twice_with_same_refresh_token_returns_401_on_second(db_client) -> None:
+    token_pair = _register_and_login(db_client, "logout-twice@example.com")
+    refresh_token = token_pair["refresh_token"]
+
+    first_logout = db_client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": refresh_token},
+    )
+    assert first_logout.status_code == 204
+
+    second_logout = db_client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": refresh_token},
+    )
+    assert second_logout.status_code == 401
+
+
+def test_logout_response_body_is_empty_on_204(db_client) -> None:
+    token_pair = _register_and_login(db_client, "empty-body@example.com")
+
+    response = db_client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": token_pair["refresh_token"]},
+    )
+
+    assert response.status_code == 204
+    assert response.content == b""
+
+
 def test_refresh_with_random_token_returns_401(db_client) -> None:
     response = db_client.post(
         "/api/v1/auth/refresh",

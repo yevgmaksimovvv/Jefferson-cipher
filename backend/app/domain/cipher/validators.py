@@ -11,6 +11,7 @@ _MVP_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def validate_alphabet(alphabet: str) -> None:
+    """Проверяет валидность алфавита (должен соответствовать стандарту A-Z)."""
     if not isinstance(alphabet, str) or not alphabet:
         raise InvalidAlphabetError
     if alphabet != _MVP_ALPHABET:
@@ -20,6 +21,7 @@ def validate_alphabet(alphabet: str) -> None:
 
 
 def validate_disk(disk: Disk, alphabet: str) -> None:
+    """Проверяет корректность последовательности символов на диске."""
     validate_alphabet(alphabet)
     if not isinstance(disk.sequence, str):
         raise InvalidDiskPermutationError
@@ -30,6 +32,7 @@ def validate_disk(disk: Disk, alphabet: str) -> None:
 
 
 def validate_disk_set(disk_set: DiskSet) -> None:
+    """Проверяет целостность набора дисков."""
     validate_alphabet(disk_set.alphabet)
     if not disk_set.disks:
         raise InvalidConfigurationError
@@ -45,6 +48,7 @@ def validate_disk_set(disk_set: DiskSet) -> None:
 
 
 def validate_key(key: CipherKey, disk_set: DiskSet) -> None:
+    """Проверяет валидность ключа шифрования относительно набора дисков."""
     if not key.disk_order:
         raise InvalidConfigurationError
     if isinstance(key.offset, bool) or not isinstance(key.offset, int):

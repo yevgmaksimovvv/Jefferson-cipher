@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def validate_default_disk_sequences() -> None:
+    """Проверяет корректность констант для дисков по умолчанию."""
     if len(DEFAULT_DISK_SEQUENCES) != 36:
         raise ValueError("DEFAULT_DISK_SEQUENCES must contain exactly 36 sequences")
 
@@ -66,6 +67,7 @@ def _validate_existing_default_disk_set(disk_set: DiskSetModel) -> None:
 
 
 def seed_default_disk_set(db: Session) -> DiskSetModel:
+    """Создаёт в БД стандартный набор дисков Джефферсона, если он отсутствует."""
     existing_disk_set = db.scalar(
         select(DiskSetModel).where(DiskSetModel.slug == DEFAULT_DISK_SET_SLUG)
     )
@@ -91,6 +93,7 @@ def seed_default_disk_set(db: Session) -> DiskSetModel:
 
 
 def initialize_database() -> DiskSetModel:
+    """Инициализирует базу данных начальными данными."""
     session_factory = get_session_factory()
     db = session_factory()
     try:
@@ -102,6 +105,7 @@ def initialize_database() -> DiskSetModel:
 
 
 def main() -> int:
+    """Точка входа скрипта инициализации БД."""
     if not any(
         isinstance(handler, logging.StreamHandler)
         and getattr(handler, "stream", None) is sys.stdout

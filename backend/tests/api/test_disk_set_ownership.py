@@ -237,6 +237,47 @@ def test_optional_auth_endpoint_rejects_invalid_token(db_session, db_client) -> 
     assert response.headers["www-authenticate"] == "Bearer"
 
 
+def test_get_specific_disk_set_with_invalid_token_returns_401(
+    db_session, db_client
+) -> None:
+    public_disk_set = _create_disk_set(db_session, "public-set")
+
+    response = db_client.get(
+        f"/api/v1/disk-sets/{public_disk_set.id}",
+        headers=_auth_headers("not-a-valid-token"),
+    )
+
+    assert response.status_code == 401
+
+
+def test_encrypt_from_disk_set_with_invalid_token_returns_401(
+    db_session, db_client
+) -> None:
+    public_disk_set = _create_disk_set(db_session, "public-set")
+
+    response = db_client.post(
+        "/api/v1/cipher/encrypt/from-disk-set",
+        json=_cipher_payload(disk_set_id=public_disk_set.id),
+        headers=_auth_headers("not-a-valid-token"),
+    )
+
+    assert response.status_code == 401
+
+
+def test_decrypt_from_disk_set_with_invalid_token_returns_401(
+    db_session, db_client
+) -> None:
+    public_disk_set = _create_disk_set(db_session, "public-set")
+
+    response = db_client.post(
+        "/api/v1/cipher/decrypt/from-disk-set",
+        json=_cipher_payload(disk_set_id=public_disk_set.id),
+        headers=_auth_headers("not-a-valid-token"),
+    )
+
+    assert response.status_code == 401
+
+
 def test_optional_auth_endpoint_treats_missing_token_as_anonymous(
     db_session, db_client
 ) -> None:

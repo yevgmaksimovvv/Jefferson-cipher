@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class DiskSetModel(Base):
+    """Модель набора дисков. owner_id=None означает публичный/системный набор."""
+
     __tablename__ = "disk_sets"
     __table_args__ = (Index("ix_disk_sets_slug", "slug", unique=True),)
 
@@ -31,12 +33,10 @@ class DiskSetModel(Base):
         server_default=text("'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"),
     )
     created_at: Mapped[datetime] = mapped_column(
-        # SQLAlchemy infers the DB type from the annotation here.
         nullable=False,
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        # Keep the column server-populated and update it on row changes.
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),

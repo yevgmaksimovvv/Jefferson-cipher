@@ -1,5 +1,6 @@
 import app.db.models  # noqa: F401
 import pytest
+from app.core.rate_limit import reset_rate_limit_state
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
@@ -56,3 +57,12 @@ def db_client(in_memory_engine):
 @pytest.fixture()
 def client() -> TestClient:
     return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter_state():
+    reset_rate_limit_state()
+    try:
+        yield
+    finally:
+        reset_rate_limit_state()

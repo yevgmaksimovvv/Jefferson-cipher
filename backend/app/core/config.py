@@ -9,6 +9,8 @@ DEFAULT_SECRET_KEY = "change-me-in-local-dev-secret-key-32-bytes-minimum"
 
 
 class Settings(BaseSettings):
+    """Настройки приложения, загружаемые из окружения или .env файла."""
+
     model_config = SettingsConfigDict(env_file=str(ROOT_ENV_PATH), extra="ignore")
 
     PROJECT_NAME: str = "Jefferson Cipher Service"
@@ -18,6 +20,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ALGORITHM: str = "HS256"
     DATABASE_URL: str = ""
+    RATE_LIMIT_AUTH_PER_MINUTE: int = 10
+    RATE_LIMIT_REFRESH_PER_MINUTE: int = 10
+    RATE_LIMIT_CIPHER_PER_MINUTE: int = 10
+    RATE_LIMIT_MUTATION_PER_MINUTE: int = 10
     BACKEND_CORS_ORIGINS: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",
@@ -36,10 +42,19 @@ class Settings(BaseSettings):
             raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES must be greater than 0")
         if self.REFRESH_TOKEN_EXPIRE_DAYS <= 0:
             raise ValueError("REFRESH_TOKEN_EXPIRE_DAYS must be greater than 0")
+        if self.RATE_LIMIT_AUTH_PER_MINUTE <= 0:
+            raise ValueError("RATE_LIMIT_AUTH_PER_MINUTE must be greater than 0")
+        if self.RATE_LIMIT_REFRESH_PER_MINUTE <= 0:
+            raise ValueError("RATE_LIMIT_REFRESH_PER_MINUTE must be greater than 0")
+        if self.RATE_LIMIT_CIPHER_PER_MINUTE <= 0:
+            raise ValueError("RATE_LIMIT_CIPHER_PER_MINUTE must be greater than 0")
+        if self.RATE_LIMIT_MUTATION_PER_MINUTE <= 0:
+            raise ValueError("RATE_LIMIT_MUTATION_PER_MINUTE must be greater than 0")
 
         return self
 
 
 @lru_cache
 def get_settings() -> Settings:
+    """Возвращает кэшированный экземпляр настроек приложения."""
     return Settings()

@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_optional_current_user
+from app.core.rate_limit import rate_limit
 from app.db.models import UserModel
 from app.db.session import get_db
 from app.domain.cipher.exceptions import CipherDomainError
@@ -88,7 +89,11 @@ def _disk_set_not_found_response() -> JSONResponse:
     return JSONResponse(status_code=404, content=payload.model_dump())
 
 
-@router.post("/encrypt", response_model=CipherResponse)
+@router.post(
+    "/encrypt",
+    response_model=CipherResponse,
+    dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
+)
 def encrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
     try:
         result = encrypt(payload.text, _to_disk_set(payload), _to_key(payload))
@@ -97,7 +102,11 @@ def encrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
     return _to_response(result, payload.include_trace)
 
 
-@router.post("/decrypt", response_model=CipherResponse)
+@router.post(
+    "/decrypt",
+    response_model=CipherResponse,
+    dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
+)
 def decrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
     try:
         result = decrypt(payload.text, _to_disk_set(payload), _to_key(payload))
@@ -106,7 +115,11 @@ def decrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
     return _to_response(result, payload.include_trace)
 
 
-@router.post("/encrypt/from-disk-set", response_model=CipherResponse)
+@router.post(
+    "/encrypt/from-disk-set",
+    response_model=CipherResponse,
+    dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
+)
 def encrypt_cipher_from_disk_set(
     payload: CipherByDiskSetRequest,
     db: Annotated[Session, Depends(get_db)],
@@ -131,7 +144,11 @@ def encrypt_cipher_from_disk_set(
     return _to_response(result, payload.include_trace)
 
 
-@router.post("/decrypt/from-disk-set", response_model=CipherResponse)
+@router.post(
+    "/decrypt/from-disk-set",
+    response_model=CipherResponse,
+    dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
+)
 def decrypt_cipher_from_disk_set(
     payload: CipherByDiskSetRequest,
     db: Annotated[Session, Depends(get_db)],

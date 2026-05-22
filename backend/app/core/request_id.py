@@ -13,9 +13,12 @@ REQUEST_ID_HEADER = "X-Request-ID"
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
+    """Middleware для обработки и логирования X-Request-ID."""
+
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        """Добавляет X-Request-ID к запросу, логирует время выполнения и статус-код."""
         request_id = request.headers.get(REQUEST_ID_HEADER) or uuid4().hex
         request.state.request_id = request_id
         started = perf_counter()

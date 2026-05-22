@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class DiskModel(Base):
+    """Модель отдельного диска в составе набора (DiskSet)."""
+
     __tablename__ = "disks"
     __table_args__ = (
         UniqueConstraint(
