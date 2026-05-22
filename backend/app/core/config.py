@@ -1,10 +1,11 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
+DEFAULT_SECRET_KEY = "change-me-in-local-dev-secret-key-32-bytes-minimum"
 
 
 class Settings(BaseSettings):
@@ -12,9 +13,9 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "Jefferson Cipher Service"
     API_V1_PREFIX: str = "/api/v1"
-    ENVIRONMENT: str = "local"
-    SECRET_KEY: str = "change-me-in-local-dev-secret-key-32-bytes-minimum"
+    SECRET_KEY: str = DEFAULT_SECRET_KEY
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ALGORITHM: str = "HS256"
     DATABASE_URL: str = ""
     BACKEND_CORS_ORIGINS: list[str] = Field(
@@ -23,6 +24,20 @@ class Settings(BaseSettings):
             "http://localhost:5173",
         ]
     )
+
+    @model_validator(mode="after")
+    def validate_auth_settings(self) -> "Settings":
+        secret_key = self.SECRET_KEY
+        if not secret_key:
+            raise ValueError("SECRET_KEY must not be empty")
+        if len(secret_key.encode("utf-8")) < 32:
+            raise ValueError("SECRET_KEY must be at least 32 bytes long")
+        if self.ACCESS_TOKEN_EXPIRE_MINUTES <= 0:
+            raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES must be greater than 0")
+        if self.REFRESH_TOKEN_EXPIRE_DAYS <= 0:
+            raise ValueError("REFRESH_TOKEN_EXPIRE_DAYS must be greater than 0")
+
+        return self
 
 
 @lru_cache

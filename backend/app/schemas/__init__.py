@@ -1,4 +1,10 @@
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from app.schemas.auth import (
+    LoginRequest,
+    LogoutRequest,
+    RefreshRequest,
+    RegisterRequest,
+    TokenResponse,
+)
 from app.schemas.cipher import (
     CipherKeyRequest,
     CipherRequest,
@@ -16,9 +22,11 @@ __all__ = [
     "CipherRequest",
     "CipherResponse",
     "LoginRequest",
+    "LogoutRequest",
     "CipherStepResponse",
     "DiskRequest",
     "DiskSetRequest",
+    "RefreshRequest",
     "RegisterRequest",
     "TokenResponse",
     "UserResponse",

@@ -71,6 +71,7 @@ def test_login_with_correct_password_returns_bearer_token(db_client) -> None:
     body = response.json()
     assert body["token_type"] == "bearer"
     assert body["access_token"]
+    assert body["refresh_token"]
 
 
 def test_login_with_wrong_password_returns_401_stable_error_shape(db_client) -> None:

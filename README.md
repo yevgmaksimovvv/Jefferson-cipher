@@ -31,10 +31,23 @@ cd backend && ../.venv/bin/python -m app.db.init_db
 cd .. && docker compose up --build -d
 ```
 
-For a real deployment, replace `SECRET_KEY` with a random secret, for example:
+Auth settings:
+
+- `SECRET_KEY` may be a placeholder in local/dev.
+- The default local `SECRET_KEY` is valid if it is at least 32 bytes long.
+- For production, replace `SECRET_KEY` with a random secret, for example:
 
 ```bash
 openssl rand -hex 32
+```
+
+- `ACCESS_TOKEN_EXPIRE_MINUTES` controls access token TTL.
+- `REFRESH_TOKEN_EXPIRE_DAYS` controls refresh token TTL.
+- Both TTL values must be greater than 0.
+- Do not overwrite `.env`; use:
+
+```bash
+test -f .env || cp .env.example .env
 ```
 
 ## Pre-commit

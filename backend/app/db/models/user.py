@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Index, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.refresh_token import RefreshTokenModel
 
 
 class UserModel(Base):
@@ -24,4 +28,8 @@ class UserModel(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+    refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
