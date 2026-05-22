@@ -24,9 +24,10 @@ uvicorn app.main:app --reload
 - `ALEMBIC_DATABASE_URL` или `DATABASE_URL_LOCAL` используются для локального Alembic и указывают на `localhost`.
 
 ```bash
-cp .env.example .env
+test -f .env || cp .env.example .env
 docker compose up -d postgres
 cd backend && ../.venv/bin/python -m alembic upgrade head
+cd backend && ../.venv/bin/python -m app.db.init_db
 cd .. && docker compose up --build -d
 ```
 

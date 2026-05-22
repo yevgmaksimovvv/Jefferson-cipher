@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import DiskModel, DiskSetModel
+from app.db.session import get_session_factory
 
 DEFAULT_DISK_SET_SLUG = "jefferson-standard"
 DEFAULT_DISK_SET_NAME = "Jefferson Standard"
@@ -82,3 +83,27 @@ def seed_default_disk_set(db: Session) -> DiskSetModel:
     db.commit()
     db.refresh(disk_set)
     return disk_set
+
+
+def initialize_database() -> DiskSetModel:
+    session_factory = get_session_factory()
+    db = session_factory()
+    try:
+        disk_set = seed_default_disk_set(db)
+        _ = len(disk_set.disks)
+        return disk_set
+    finally:
+        db.close()
+
+
+def main() -> int:
+    disk_set = initialize_database()
+    print(
+        "Seeded disk set: "
+        f"id={disk_set.id} slug={disk_set.slug} disks={len(disk_set.disks)}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

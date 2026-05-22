@@ -1,13 +1,16 @@
 import pytest
+from app.db import init_db
 from app.db.init_db import (
     DEFAULT_ALPHABET,
     DEFAULT_DISK_SET_NAME,
     DEFAULT_DISK_SET_SLUG,
+    main,
     seed_default_disk_set,
     validate_default_disk_sequences,
 )
 from app.db.models import DiskModel, DiskSetModel
 from sqlalchemy import select
+from sqlalchemy.orm import sessionmaker
 
 
 def test_validate_default_disk_sequences_passes():
@@ -42,6 +45,33 @@ def test_seed_default_disk_set_is_idempotent(db_session):
         )
         is not None
     )
+
+
+def test_main_seeds_default_disk_set_once_and_is_idempotent(
+    in_memory_engine, monkeypatch, capsys
+):
+    SessionLocal = sessionmaker(bind=in_memory_engine, expire_on_commit=False)
+    monkeypatch.setattr(init_db, "get_session_factory", lambda: SessionLocal)
+
+    assert main() == 0
+    first_output = capsys.readouterr().out.strip()
+    assert first_output.startswith("Seeded disk set: id=")
+    assert "slug=jefferson-standard" in first_output
+    assert "disks=36" in first_output
+
+    assert main() == 0
+    second_output = capsys.readouterr().out.strip()
+    assert second_output.startswith("Seeded disk set: id=")
+    assert "slug=jefferson-standard" in second_output
+    assert "disks=36" in second_output
+
+    session = SessionLocal()
+    try:
+        disk_sets = session.scalars(select(DiskSetModel)).all()
+        assert len(disk_sets) == 1
+        assert len(disk_sets[0].disks) == 36
+    finally:
+        session.close()
 
 
 @pytest.mark.parametrize(

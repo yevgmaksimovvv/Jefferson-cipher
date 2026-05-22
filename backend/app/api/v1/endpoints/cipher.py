@@ -1,15 +1,24 @@
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from typing import Annotated
 
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
 from app.domain.cipher.exceptions import CipherDomainError
 from app.domain.cipher.models import CipherKey, CipherResult, Disk, DiskSet
 from app.domain.cipher.service import decrypt, encrypt
 from app.schemas.cipher import (
+    CipherByDiskSetRequest,
     CipherRequest,
     CipherResponse,
     CipherStepResponse,
     ErrorDetailResponse,
     ErrorResponse,
+)
+from app.services.cipher_from_disk_set import (
+    decrypt_with_disk_set_id,
+    encrypt_with_disk_set_id,
 )
 
 router = APIRouter(prefix="/cipher", tags=["cipher"])
@@ -67,6 +76,16 @@ def _domain_error_response(error: CipherDomainError) -> JSONResponse:
     return JSONResponse(status_code=400, content=payload.model_dump())
 
 
+def _disk_set_not_found_response() -> JSONResponse:
+    payload = ErrorResponse(
+        error=ErrorDetailResponse(
+            code="DISK_SET_NOT_FOUND",
+            message="Disk set not found",
+        )
+    )
+    return JSONResponse(status_code=404, content=payload.model_dump())
+
+
 @router.post("/encrypt", response_model=CipherResponse)
 def encrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
     try:
@@ -82,4 +101,50 @@ def decrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
         result = decrypt(payload.text, _to_disk_set(payload), _to_key(payload))
     except CipherDomainError as error:
         return _domain_error_response(error)
+    return _to_response(result, payload.include_trace)
+
+
+@router.post("/encrypt/from-disk-set", response_model=CipherResponse)
+def encrypt_cipher_from_disk_set(
+    payload: CipherByDiskSetRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> CipherResponse | JSONResponse:
+    try:
+        result = encrypt_with_disk_set_id(
+            text=payload.text,
+            disk_set_id=payload.disk_set_id,
+            key=CipherKey(
+                disk_order=tuple(payload.key.disk_order),
+                offset=payload.key.offset,
+            ),
+            db=db,
+            include_trace=payload.include_trace,
+        )
+    except CipherDomainError as error:
+        return _domain_error_response(error)
+    if result is None:
+        return _disk_set_not_found_response()
+    return _to_response(result, payload.include_trace)
+
+
+@router.post("/decrypt/from-disk-set", response_model=CipherResponse)
+def decrypt_cipher_from_disk_set(
+    payload: CipherByDiskSetRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> CipherResponse | JSONResponse:
+    try:
+        result = decrypt_with_disk_set_id(
+            text=payload.text,
+            disk_set_id=payload.disk_set_id,
+            key=CipherKey(
+                disk_order=tuple(payload.key.disk_order),
+                offset=payload.key.offset,
+            ),
+            db=db,
+            include_trace=payload.include_trace,
+        )
+    except CipherDomainError as error:
+        return _domain_error_response(error)
+    if result is None:
+        return _disk_set_not_found_response()
     return _to_response(result, payload.include_trace)

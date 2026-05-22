@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 from app.core.config import ROOT_ENV_PATH, Settings
+from app.db import init_db
 from app.db import session as db_session
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -211,3 +212,14 @@ def test_get_db_closes_session_after_finalization(monkeypatch):
     generator.close()
 
     assert fake_session.closed
+
+
+def test_init_db_main_returns_zero_with_in_memory_session(
+    in_memory_engine, monkeypatch
+):
+    from sqlalchemy.orm import sessionmaker
+
+    SessionLocal = sessionmaker(bind=in_memory_engine, expire_on_commit=False)
+    monkeypatch.setattr(init_db, "get_session_factory", lambda: SessionLocal)
+
+    assert init_db.main() == 0

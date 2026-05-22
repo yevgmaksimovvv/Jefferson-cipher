@@ -23,6 +23,13 @@ class CipherRequest(BaseModel):
     include_trace: bool = True
 
 
+class CipherByDiskSetRequest(BaseModel):
+    text: str
+    disk_set_id: int
+    key: CipherKeyRequest
+    include_trace: bool = True
+
+
 class CipherStepResponse(BaseModel):
     block_index: int
     char_index: int

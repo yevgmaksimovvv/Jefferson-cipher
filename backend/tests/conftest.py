@@ -1,6 +1,7 @@
 import app.db.models  # noqa: F401
 import pytest
 from app.db.base import Base
+from app.db.session import get_db
 from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -31,6 +32,25 @@ def db_session(in_memory_engine):
         yield session
     finally:
         session.close()
+
+
+@pytest.fixture()
+def db_client(in_memory_engine):
+    SessionLocal = sessionmaker(bind=in_memory_engine, expire_on_commit=False)
+
+    def override_get_db():
+        session = SessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as client:
+        try:
+            yield client
+        finally:
+            app.dependency_overrides.clear()
 
 
 @pytest.fixture()
