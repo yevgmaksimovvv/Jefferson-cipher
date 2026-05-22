@@ -111,3 +111,13 @@ def test_default_algorithm_is_hs256(isolated_settings) -> None:
     settings = config_module.get_settings()
 
     assert settings.ALGORITHM == "HS256"
+
+
+def test_default_proxy_and_cors_settings_include_local_https(
+    isolated_settings,
+) -> None:
+    settings = config_module.get_settings()
+
+    assert settings.TRUST_PROXY_HEADERS is False
+    assert settings.TRUSTED_PROXY_IPS == ""
+    assert "https://localhost:8443" in settings.BACKEND_CORS_ORIGINS

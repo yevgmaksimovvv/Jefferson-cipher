@@ -79,7 +79,7 @@ def test_alembic_database_url_priority(monkeypatch):
     assert captured["url"] == "sqlite:///alembic.db"
 
 
-def test_alembic_database_url_local_wins_over_database_url(monkeypatch):
+def test_alembic_database_url_local_is_ignored(monkeypatch):
     monkeypatch.delenv("ALEMBIC_DATABASE_URL", raising=False)
     monkeypatch.delenv("DATABASE_URL_LOCAL", raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)
@@ -89,7 +89,7 @@ def test_alembic_database_url_local_wins_over_database_url(monkeypatch):
 
     _, captured = _load_alembic_env(monkeypatch)
 
-    assert captured["sqlalchemy.url"] == "sqlite:///local.db"
+    assert captured["sqlalchemy.url"] == "sqlite:///container.db"
 
 
 def test_alembic_database_url_falls_back_to_database_url(monkeypatch):

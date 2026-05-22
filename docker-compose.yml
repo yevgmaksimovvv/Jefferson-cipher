@@ -33,8 +33,6 @@ services:
     image: jefferson-cipher-backend:latest
     env_file:
       - .env
-    environment:
-      ALEMBIC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,6 +50,10 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/0
+      TRUST_PROXY_HEADERS: "true"
+      TRUSTED_PROXY_IPS: "*"
+      ENABLE_HSTS: "false"
+      BACKEND_CORS_ORIGINS: http://localhost:3000,http://localhost:5173,https://localhost,https://localhost:8443
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,6 +61,35 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+
+  nginx:
+    image: jefferson-cipher-nginx:latest
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "${NGINX_HTTP_PORT:-8080}:8080"
+      - "${NGINX_HTTPS_PORT:-8443}:8443"
+    environment:
+      NGINX_HTTP_PORT: ${NGINX_HTTP_PORT:-8080}
+      NGINX_HTTPS_PORT: ${NGINX_HTTPS_PORT:-8443}
+      NGINX_CERT_PATH: ${NGINX_CERT_PATH:-/etc/nginx/certs/localhost.crt}
+      NGINX_KEY_PATH: ${NGINX_KEY_PATH:-/etc/nginx/certs/localhost.key}
+      NGINX_GENERATE_SELF_SIGNED: ${NGINX_GENERATE_SELF_SIGNED:-true}
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/jefferson.conf:/etc/nginx/conf.d/jefferson.conf:ro
+      - ./nginx/certs:/etc/nginx/certs
+      - ${NGINX_HOST_CERT_DIR:-./nginx/certs}:/mnt/nginx-host-certs:ro
+      - ./docker/scripts/generate_self_signed_cert.sh:/docker/scripts/generate_self_signed_cert.sh:ro
+      - ./docker/scripts/nginx-entrypoint.sh:/docker/scripts/nginx-entrypoint.sh:ro
+    command:
+      - /bin/sh
+      - -c
+      - /docker/scripts/nginx-entrypoint.sh
+    depends_on:
+      backend:
+        condition: service_started
 
 volumes:
   postgres_data:

@@ -8,6 +8,9 @@ repos:
       - id: check-toml
       - id: check-added-large-files
       - id: debug-statements
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.5
@@ -30,8 +33,36 @@ repos:
         files: ^backend/
       - id: backend-pytest-smoke
         name: backend-pytest-smoke
-        entry: cd backend && ../.venv/bin/python -m pytest tests/api/test_health.py
+        entry: bash scripts/precommit/backend_pytest_smoke.sh
         language: system
         pass_filenames: false
         always_run: true
         files: ^backend/
+      - id: forbid-staged-env
+        name: forbid-staged-env
+        entry: bash scripts/precommit/forbid_staged_env.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: forbid-staged-pem-material
+        name: forbid-staged-pem-material
+        entry: bash scripts/precommit/forbid_staged_pem_material.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: backend-security-logging-grep
+        name: backend-security-logging-grep
+        entry: bash scripts/precommit/backend_security_logging_grep.sh
+        language: system
+        files: ^backend/app/
+      - id: backend-sync-sqlalchemy-only
+        name: backend-sync-sqlalchemy-only
+        entry: bash scripts/precommit/backend_sync_sqlalchemy_only.sh
+        language: system
+        pass_filenames: false
+        files: ^backend/app/
+      - id: docs-no-destructive-commands
+        name: docs-no-destructive-commands
+        entry: bash scripts/precommit/docs_no_destructive_commands.sh
+        language: system
+        files: ^(README\.md|docs/.*|\.env\.example)$

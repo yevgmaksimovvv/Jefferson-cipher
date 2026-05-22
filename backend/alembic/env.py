@@ -34,13 +34,15 @@ def load_root_env(env_path: Path) -> None:
 
 
 def get_database_url() -> str:
-    for name in ("ALEMBIC_DATABASE_URL", "DATABASE_URL_LOCAL", "DATABASE_URL"):
+    # 1. Явный override для one-shot команд
+    # 2. Основной URL базы данных
+    for name in ("ALEMBIC_DATABASE_URL", "DATABASE_URL"):
         value = os.getenv(name, "")
         if value:
             return value
     raise RuntimeError(
         "Alembic database URL is not configured. Set ALEMBIC_DATABASE_URL or "
-        "DATABASE_URL_LOCAL."
+        "DATABASE_URL in the environment."
     )
 
 
