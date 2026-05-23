@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.core.config import get_settings
+from app.core.rate_limit import get_rate_limiter_status
 from app.db.init_db import DEFAULT_DISK_SET_SLUG
 from app.db.models import DiskModel, DiskSetModel
 from app.db.session import get_session_factory
@@ -49,16 +51,21 @@ def _build_ready_payload(
     database: str,
     migrations: str,
     seed: str,
+    rate_limiter: str,
 ) -> dict[str, str]:
     """Формирует JSON-ответ о готовности сервиса."""
     status = (
-        "ready" if (database, migrations, seed) == ("ok", "ok", "ok") else "not_ready"
+        "ready"
+        if (database, migrations, seed) == ("ok", "ok", "ok")
+        and rate_limiter in {"ok", "memory"}
+        else "not_ready"
     )
     return {
         "status": status,
         "database": database,
         "migrations": migrations,
         "seed": seed,
+        "rate_limiter": rate_limiter,
     }
 
 
@@ -66,9 +73,10 @@ def _ready_response(
     database: str,
     migrations: str,
     seed: str,
+    rate_limiter: str = "unknown",
 ) -> JSONResponse:
     """Возвращает HTTP-ответ с информацией о готовности БД и данных."""
-    payload = _build_ready_payload(database, migrations, seed)
+    payload = _build_ready_payload(database, migrations, seed, rate_limiter)
     status_code = 200 if payload["status"] == "ready" else 503
     return JSONResponse(status_code=status_code, content=payload)
 
@@ -83,6 +91,7 @@ def _ready_response(
 )
 def ready() -> JSONResponse:
     """Проверка готовности (Readiness probe): БД, миграций и данных."""
+    settings = get_settings()
     db = None
     try:
         session_factory = get_session_factory()
@@ -127,7 +136,11 @@ def ready() -> JSONResponse:
         if disks_count != EXPECTED_DEFAULT_DISKS:
             return _ready_response("ok", "ok", "error")
 
-        return _ready_response("ok", "ok", "ok")
+        rate_limiter = get_rate_limiter_status(settings)
+        if rate_limiter == "error":
+            return _ready_response("ok", "ok", "ok", rate_limiter="error")
+
+        return _ready_response("ok", "ok", "ok", rate_limiter=rate_limiter)
     finally:
         if db is not None:
             db.close()

@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import Request
 
-from app.core.config import get_settings
+from app.core.config import get_settings, resolve_rate_limit_storage
 
 logger = logging.getLogger(__name__)
 WINDOW_SECONDS = 60
@@ -134,6 +134,9 @@ class InMemoryRateLimiter:
         with self._lock:
             self._hits.clear()
 
+    def status(self) -> str:
+        return "memory"
+
 
 class _UnavailableRateLimiter:
     def allow(
@@ -144,6 +147,9 @@ class _UnavailableRateLimiter:
         limit: int,
     ) -> RateLimitResult:
         raise RateLimiterUnavailable()
+
+    def status(self) -> str:
+        return "error"
 
 
 class RedisRateLimiter:
@@ -207,6 +213,15 @@ class RedisRateLimiter:
             return RateLimitResult(allowed=False, retry_after=max(1, ttl))
         return RateLimitResult(allowed=True)
 
+    def status(self) -> str:
+        client = self._get_client()
+        ping = getattr(client, "ping", None)
+        if not callable(ping):
+            raise RateLimiterUnavailable()
+        if not ping():
+            raise RateLimiterUnavailable()
+        return "ok"
+
 
 def _create_redis_client(redis_url: str) -> Any:
     if not redis_url:
@@ -238,7 +253,10 @@ def reset_rate_limit_state() -> None:
 def get_rate_limiter(
     settings: Any,
 ) -> InMemoryRateLimiter | RedisRateLimiter | _UnavailableRateLimiter:
-    storage = getattr(settings, "RATE_LIMIT_STORAGE", "auto")
+    storage = resolve_rate_limit_storage(
+        getattr(settings, "RATE_LIMIT_STORAGE", "auto"),
+        getattr(settings, "REDIS_URL", None),
+    )
     redis_url = getattr(settings, "REDIS_URL", None)
     fail_open = getattr(settings, "RATE_LIMIT_FAIL_OPEN", False)
 
@@ -262,6 +280,16 @@ def get_rate_limiter(
             _rate_limiter_cache[cache_key] = limiter
         return limiter
     return _memory_rate_limiter
+
+
+def get_rate_limiter_status(settings: Any) -> str:
+    limiter = get_rate_limiter(settings)
+    try:
+        return limiter.status()
+    except RateLimiterUnavailable:
+        return "error"
+    except Exception:
+        return "error"
 
 
 def rate_limit(bucket: str, settings_key: str):

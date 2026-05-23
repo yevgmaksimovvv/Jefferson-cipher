@@ -16,6 +16,12 @@ DEFAULT_BACKEND_CORS_ORIGINS = [
 ]
 
 
+def resolve_rate_limit_storage(storage: str, redis_url: str | None) -> str:
+    if storage == "auto":
+        return "redis" if redis_url else "memory"
+    return storage
+
+
 class Settings(BaseSettings):
     """Настройки приложения, загружаемые из окружения или .env файла."""
 
@@ -82,6 +88,13 @@ class Settings(BaseSettings):
             return [str(origin).strip() for origin in value if str(origin).strip()]
         return value
 
+    @field_validator("BACKEND_CORS_ORIGINS")
+    @classmethod
+    def reject_wildcard_backend_cors_origins(cls, value: list[str]) -> list[str]:
+        if "*" in value:
+            raise ValueError("BACKEND_CORS_ORIGINS must not contain wildcard *")
+        return value
+
     @model_validator(mode="after")
     def validate_auth_settings(self) -> "Settings":
         secret_key = self.SECRET_KEY
@@ -103,6 +116,16 @@ class Settings(BaseSettings):
             raise ValueError("RATE_LIMIT_MUTATION_PER_MINUTE must be greater than 0")
         if self.RATE_LIMIT_STORAGE not in {"auto", "memory", "redis"}:
             raise ValueError("RATE_LIMIT_STORAGE must be one of: auto, memory, redis")
+        resolved_rate_limit_storage = resolve_rate_limit_storage(
+            self.RATE_LIMIT_STORAGE,
+            self.REDIS_URL,
+        )
+        if self.RATE_LIMIT_STORAGE == "redis" and not self.REDIS_URL:
+            raise ValueError("RATE_LIMIT_STORAGE=redis requires REDIS_URL")
+        if self.RATE_LIMIT_FAIL_OPEN and resolved_rate_limit_storage == "redis":
+            raise ValueError(
+                "RATE_LIMIT_FAIL_OPEN is not allowed when Redis rate limiting is active"
+            )
         if self.HSTS_MAX_AGE_SECONDS <= 0:
             raise ValueError("HSTS_MAX_AGE_SECONDS must be greater than 0")
 

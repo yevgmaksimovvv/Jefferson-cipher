@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from importlib import import_module
 
+import app.core.config as config_module
+import app.core.rate_limit as rate_limit_module
 import pytest
 
 health_module = import_module("app.api.v1.endpoints.health")
@@ -57,6 +59,16 @@ class FakeSession:
         self.closed = True
 
 
+class FakeRedisClient:
+    def __init__(self, *, fail_ping: bool = False):
+        self.fail_ping = fail_ping
+
+    def ping(self):
+        if self.fail_ping:
+            raise rate_limit_module.RateLimiterUnavailable()
+        return True
+
+
 def test_ready_endpoint_returns_200_when_database_migrated_and_seeded(
     client, monkeypatch
 ):
@@ -74,6 +86,7 @@ def test_ready_endpoint_returns_200_when_database_migrated_and_seeded(
         "database": "ok",
         "migrations": "ok",
         "seed": "ok",
+        "rate_limiter": "memory",
     }
     assert fake_session.closed is True
 
@@ -92,6 +105,7 @@ def test_ready_endpoint_returns_503_when_db_connection_fails(client, monkeypatch
         "database": "error",
         "migrations": "unknown",
         "seed": "unknown",
+        "rate_limiter": "unknown",
     }
     assert fake_session.closed is True
 
@@ -113,6 +127,7 @@ def test_ready_endpoint_returns_not_ready_when_migrations_do_not_match_head(
         "database": "ok",
         "migrations": "error",
         "seed": "unknown",
+        "rate_limiter": "unknown",
     }
     assert fake_session.closed is True
 
@@ -133,6 +148,7 @@ def test_ready_endpoint_returns_not_ready_when_migrations_query_fails(
         "database": "ok",
         "migrations": "error",
         "seed": "unknown",
+        "rate_limiter": "unknown",
     }
     assert fake_session.closed is True
 
@@ -158,5 +174,62 @@ def test_ready_endpoint_returns_not_ready_when_seed_is_missing_or_corrupted(
         "database": "ok",
         "migrations": "ok",
         "seed": "error",
+        "rate_limiter": "unknown",
+    }
+    assert fake_session.closed is True
+
+
+def test_ready_endpoint_reports_redis_rate_limiter_ok(client, monkeypatch):
+    fake_session = FakeSession()
+    monkeypatch.setattr(
+        health_module, "get_session_factory", lambda: lambda: fake_session
+    )
+    monkeypatch.setattr(health_module, "_get_alembic_head_revision", lambda: "0004")
+    monkeypatch.setenv("RATE_LIMIT_STORAGE", "redis")
+    monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")
+    config_module.get_settings.cache_clear()
+    monkeypatch.setattr(
+        rate_limit_module,
+        "_create_redis_client",
+        lambda redis_url: FakeRedisClient(),
+    )
+
+    response = client.get("/api/v1/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ready",
+        "database": "ok",
+        "migrations": "ok",
+        "seed": "ok",
+        "rate_limiter": "ok",
+    }
+    assert fake_session.closed is True
+
+
+def test_ready_endpoint_reports_redis_rate_limiter_error(client, monkeypatch):
+    fake_session = FakeSession()
+    monkeypatch.setattr(
+        health_module, "get_session_factory", lambda: lambda: fake_session
+    )
+    monkeypatch.setattr(health_module, "_get_alembic_head_revision", lambda: "0004")
+    monkeypatch.setenv("RATE_LIMIT_STORAGE", "redis")
+    monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")
+    config_module.get_settings.cache_clear()
+    monkeypatch.setattr(
+        rate_limit_module,
+        "_create_redis_client",
+        lambda redis_url: FakeRedisClient(fail_ping=True),
+    )
+
+    response = client.get("/api/v1/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "not_ready",
+        "database": "ok",
+        "migrations": "ok",
+        "seed": "ok",
+        "rate_limiter": "error",
     }
     assert fake_session.closed is True

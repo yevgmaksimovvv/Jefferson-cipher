@@ -14,11 +14,14 @@
 - Используется Redis для хранения счетчиков.
 - При отсутствии Redis — memory fallback.
 - При недоступности Redis — 503.
+- `RATE_LIMIT_STORAGE=redis` требует `REDIS_URL`.
+- `RATE_LIMIT_FAIL_OPEN=true` с Redis-режимом запрещён.
 - Ключи не содержат токены или пароли.
 
 ## Доверенный прокси
 - `X-Forwarded-For` доверяется только от доверенных прокси.
 - `TRUSTED_PROXY_IPS` содержит список разрешенных IP.
+- `TRUSTED_PROXY_IPS=*` допустим только для local/dev escape hatch, когда backend стоит за доверенным локальным прокси и не торчит напрямую наружу.
 
 ## HTTPS
 - TLS завершается на nginx.
@@ -26,10 +29,11 @@
 - Self-signed сертификаты только для локальной разработки.
 - Custom certificates через `NGINX_HOST_CERT_DIR`.
 - HSTS выключен по умолчанию.
+- HSTS не включают на self-signed localhost-стенде.
 
 ## CORS
 - Настраивается через `BACKEND_CORS_ORIGINS`.
-- Wildcard по умолчанию запрещен.
+- Wildcard `*` запрещён.
 
 ## Audit logs
 - Security audit events пишутся в logger `app.audit`.

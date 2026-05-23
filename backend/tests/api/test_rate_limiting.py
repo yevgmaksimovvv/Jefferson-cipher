@@ -336,46 +336,27 @@ def test_auto_storage_with_redis_url_and_redis_unavailable_returns_503(
     }
 
 
-def test_redis_storage_fail_open_allows_request_on_redis_outage(monkeypatch) -> None:
-    monkeypatch.setattr(
-        rate_limit_module,
-        "_create_redis_client",
-        lambda redis_url: (_ for _ in ()).throw(RateLimiterUnavailable()),
-    )
-    app = _fresh_app_with_env(
-        monkeypatch,
-        RATE_LIMIT_STORAGE="redis",
-        REDIS_URL="redis://redis:6379/0",
-        RATE_LIMIT_FAIL_OPEN="true",
-    )
-
-    with TestClient(app) as client:
-        response = client.post("/api/v1/cipher/encrypt", json=_cipher_payload())
-
-    assert response.status_code == 200
-    assert response.status_code != 503
+def test_redis_storage_fail_open_is_rejected(monkeypatch) -> None:
+    with pytest.raises(
+        ValueError,
+        match="RATE_LIMIT_FAIL_OPEN is not allowed when Redis rate limiting is active",
+    ):
+        _fresh_app_with_env(
+            monkeypatch,
+            RATE_LIMIT_STORAGE="redis",
+            REDIS_URL="redis://redis:6379/0",
+            RATE_LIMIT_FAIL_OPEN="true",
+        )
 
 
-def test_redis_storage_with_empty_url_returns_unavailable_not_crash(
-    monkeypatch,
-) -> None:
-    app = _fresh_app_with_env(
-        monkeypatch,
-        RATE_LIMIT_STORAGE="redis",
-        REDIS_URL="",
-        RATE_LIMIT_FAIL_OPEN="false",
-    )
-
-    with TestClient(app) as client:
-        response = client.post("/api/v1/cipher/encrypt", json=_cipher_payload())
-
-    assert response.status_code == 503
-    assert response.json() == {
-        "error": {
-            "code": "RATE_LIMITER_UNAVAILABLE",
-            "message": "Rate limiter unavailable",
-        }
-    }
+def test_redis_storage_without_url_is_rejected(monkeypatch) -> None:
+    with pytest.raises(ValueError, match="RATE_LIMIT_STORAGE=redis requires REDIS_URL"):
+        _fresh_app_with_env(
+            monkeypatch,
+            RATE_LIMIT_STORAGE="redis",
+            REDIS_URL="",
+            RATE_LIMIT_FAIL_OPEN="false",
+        )
 
 
 def test_rate_limit_keys_do_not_contain_secret_like_values(monkeypatch) -> None:

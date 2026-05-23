@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 from app.core import config as config_module
+from app.core import rate_limit as rate_limit_module
 
 
 @pytest.fixture()
@@ -121,3 +122,90 @@ def test_default_proxy_and_cors_settings_include_local_https(
     assert settings.TRUST_PROXY_HEADERS is False
     assert settings.TRUSTED_PROXY_IPS == ""
     assert "https://localhost:8443" in settings.BACKEND_CORS_ORIGINS
+
+
+def test_invalid_rate_limit_storage_is_rejected(monkeypatch, isolated_settings) -> None:
+    monkeypatch.setenv("RATE_LIMIT_STORAGE", "invalid")
+
+    with pytest.raises(
+        ValueError, match="RATE_LIMIT_STORAGE must be one of: auto, memory, redis"
+    ):
+        config_module.get_settings()
+
+
+def test_redis_rate_limit_storage_requires_redis_url(
+    monkeypatch, isolated_settings
+) -> None:
+    monkeypatch.setenv("RATE_LIMIT_STORAGE", "redis")
+    monkeypatch.setenv("REDIS_URL", "")
+
+    with pytest.raises(ValueError, match="RATE_LIMIT_STORAGE=redis requires REDIS_URL"):
+        config_module.get_settings()
+
+
+def test_auto_rate_limit_storage_without_redis_url_resolves_to_memory(
+    isolated_settings,
+) -> None:
+    settings = config_module.Settings(RATE_LIMIT_STORAGE="auto", REDIS_URL="")
+
+    limiter = rate_limit_module.get_rate_limiter(settings)
+
+    assert isinstance(limiter, rate_limit_module.InMemoryRateLimiter)
+
+
+def test_auto_rate_limit_storage_with_redis_url_resolves_to_redis(
+    isolated_settings,
+) -> None:
+    settings = config_module.Settings(
+        RATE_LIMIT_STORAGE="auto",
+        REDIS_URL="redis://redis:6379/0",
+    )
+
+    limiter = rate_limit_module.get_rate_limiter(settings)
+
+    assert isinstance(limiter, rate_limit_module.RedisRateLimiter)
+
+
+def test_fail_open_is_rejected_when_redis_rate_limiting_is_active(
+    monkeypatch, isolated_settings
+) -> None:
+    monkeypatch.setenv("RATE_LIMIT_STORAGE", "redis")
+    monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")
+    monkeypatch.setenv("RATE_LIMIT_FAIL_OPEN", "true")
+
+    with pytest.raises(
+        ValueError,
+        match="RATE_LIMIT_FAIL_OPEN is not allowed when Redis rate limiting is active",
+    ):
+        config_module.get_settings()
+
+
+def test_fail_open_is_rejected_when_auto_resolves_to_redis(
+    monkeypatch, isolated_settings
+) -> None:
+    monkeypatch.setenv("RATE_LIMIT_STORAGE", "auto")
+    monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")
+    monkeypatch.setenv("RATE_LIMIT_FAIL_OPEN", "true")
+
+    with pytest.raises(
+        ValueError,
+        match="RATE_LIMIT_FAIL_OPEN is not allowed when Redis rate limiting is active",
+    ):
+        config_module.get_settings()
+
+
+def test_hsts_max_age_must_be_positive(monkeypatch, isolated_settings) -> None:
+    monkeypatch.setenv("HSTS_MAX_AGE_SECONDS", "0")
+
+    with pytest.raises(ValueError, match="HSTS_MAX_AGE_SECONDS must be greater than 0"):
+        config_module.get_settings()
+
+
+def test_backend_cors_wildcard_is_rejected(monkeypatch, isolated_settings) -> None:
+    monkeypatch.setenv("BACKEND_CORS_ORIGINS", "*")
+    config_module.get_settings.cache_clear()
+
+    with pytest.raises(
+        ValueError, match="BACKEND_CORS_ORIGINS must not contain wildcard \\*"
+    ):
+        config_module.get_settings()

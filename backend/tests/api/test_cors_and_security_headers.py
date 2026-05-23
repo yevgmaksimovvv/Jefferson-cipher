@@ -78,6 +78,13 @@ def test_cors_does_not_use_wildcard_by_default(client) -> None:
     assert response.headers.get("access-control-allow-origin") != "*"
 
 
+def test_cors_wildcard_origin_is_rejected_by_settings() -> None:
+    with pytest.raises(
+        ValueError, match="BACKEND_CORS_ORIGINS must not contain wildcard \\*"
+    ):
+        config_module.Settings(BACKEND_CORS_ORIGINS=["*"])
+
+
 def test_security_headers_present_on_health(client) -> None:
     response = client.get("/api/v1/health")
 
