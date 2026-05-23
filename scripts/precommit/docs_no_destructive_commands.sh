@@ -2,7 +2,7 @@
 set -euo pipefail
 
 violations="$(
-  rg -n -i -e 'cp \.env\.example \.env' -e 'docker compose down -v' README.md docs .env.example || true
+  rg -n -i -e 'cp \.env\.example \.env' -e 'docker compose down[[:space:]]+-v' README.md docs .env.example || true
 )"
 
 if [[ -z "$violations" ]]; then

@@ -9,6 +9,29 @@ docker compose up -d
 docker compose down
 ```
 
+## Runtime smoke
+```bash
+bash scripts/smoke/compose_runtime_smoke.sh
+```
+
+Проверяет:
+- Postgres health;
+- backend-init migrations + seed;
+- backend health и ready;
+- Redis limiter availability;
+- direct backend HTTP;
+- nginx HTTP/HTTPS proxy;
+- CORS preflight;
+- security headers;
+- OpenAPI inventory;
+- rate limit 429;
+- отсутствие изменённых `.env` и cert/key файлов в рабочем дереве.
+
+Не делает:
+- не удаляет volumes;
+- не выполняет destructive cleanup volumes;
+- не заменяет полный `pytest`.
+
 ## Operator runbook
 - Health check: `curl -s http://localhost:8000/api/v1/health`
 - Ready check: `curl -s http://localhost:8000/api/v1/ready` and inspect `rate_limiter` (`memory`, `ok`, or `error`)
