@@ -71,9 +71,19 @@ def test_openapi_docs_reference_contract_terms() -> None:
     docs = DOCS_PATH.read_text(encoding="utf-8")
     lowered = docs.lower()
 
+    for path in EXPECTED_PATHS:
+        assert path in docs
+
+    assert "204" in docs
+    assert "401" in docs
+    assert "404" in docs
+    assert "422" in docs
     assert "429" in docs
     assert "503" in docs
     assert "owner_id" in lowered
-    assert "request body" in lowered
+    assert ("не принимается" in lowered) or ("not accepted" in lowered)
     assert "limit" in lowered
     assert "offset" in lowered
+    assert "redis" in lowered
+    assert "rate limit" in lowered
+    assert ("runtime.md" in lowered) or ("8443" in lowered)

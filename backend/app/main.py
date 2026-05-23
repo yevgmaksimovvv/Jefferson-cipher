@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app.api.v1.router import router as api_v1_router
@@ -90,3 +91,33 @@ async def rate_limiter_unavailable_handler(
 
 
 app.include_router(api_v1_router)
+
+_OPTIONAL_AUTH_OPENAPI_PATHS = {
+    "/api/v1/disk-sets": {"get"},
+    "/api/v1/disk-sets/{disk_set_id}": {"get"},
+    "/api/v1/cipher/encrypt/from-disk-set": {"post"},
+    "/api/v1/cipher/decrypt/from-disk-set": {"post"},
+}
+
+
+def custom_openapi() -> dict:
+    if app.openapi_schema is not None:
+        return app.openapi_schema
+
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+        tags=app.openapi_tags,
+    )
+
+    for path, methods in _OPTIONAL_AUTH_OPENAPI_PATHS.items():
+        for method in methods:
+            schema["paths"][path][method].pop("security", None)
+
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = custom_openapi

@@ -165,6 +165,7 @@ def decrypt_cipher(payload: CipherRequest) -> CipherResponse | JSONResponse:
             "model": ErrorResponse,
         },
     },
+    openapi_extra={"security": []},
     dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
 )
 def encrypt_cipher_from_disk_set(
@@ -215,6 +216,7 @@ def encrypt_cipher_from_disk_set(
             "model": ErrorResponse,
         },
     },
+    openapi_extra={"security": []},
     dependencies=[Depends(rate_limit("cipher", "RATE_LIMIT_CIPHER_PER_MINUTE"))],
 )
 def decrypt_cipher_from_disk_set(

@@ -9,6 +9,16 @@ docker compose up -d
 docker compose down
 ```
 
+## Operator runbook
+- Health check: `curl -s http://localhost:8000/api/v1/health`
+- Ready check: `curl -s http://localhost:8000/api/v1/ready`
+- OpenAPI check: `curl -s http://localhost:8000/openapi.json`
+- CORS preflight: `curl -i -X OPTIONS http://localhost:8000/api/v1/health -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: GET'`
+- HTTPS health via 8443: `curl -k -s https://localhost:8443/api/v1/health`
+- Rate limit smoke: повторите один и тот же auth/cipher запрос до `429 RATE_LIMIT_EXCEEDED`.
+- Redis limiter unavailable behavior: при `RATE_LIMIT_STORAGE=redis` и недоступном Redis ожидается `503 RATE_LIMITER_UNAVAILABLE`, если fail-open не включен.
+- Audit logs: logger `app.audit`, смотреть в `docker compose logs backend`.
+
 ## Сервисы
 - `postgres`: база данных.
 - `redis`: кэш для rate limiter.

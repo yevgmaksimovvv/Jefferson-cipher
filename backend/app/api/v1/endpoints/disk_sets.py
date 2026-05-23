@@ -80,6 +80,7 @@ def _slug_exists_response() -> JSONResponse:
             "model": ErrorResponse,
         }
     },
+    openapi_extra={"security": []},
 )
 def list_disk_sets_endpoint(
     db: Annotated[Session, Depends(get_db)],
@@ -113,6 +114,7 @@ def list_disk_sets_endpoint(
             "model": ErrorResponse,
         },
     },
+    openapi_extra={"security": []},
 )
 def get_disk_set_endpoint(
     disk_set_id: int,
@@ -229,6 +231,7 @@ def update_disk_set_endpoint(
     disk_set_id: int,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
+    request: Request,
     payload: DiskSetUpdateRequest | None = None,
 ) -> DiskSetResponse | JSONResponse:
     try:
@@ -239,6 +242,12 @@ def update_disk_set_endpoint(
         return _validation_error_response(str(error))
     except DiskSetSlugAlreadyExistsError:
         return _slug_exists_response()
+    log_audit_event(
+        "disk_set.updated",
+        user_id=current_user.id,
+        disk_set_id=disk_set.id,
+        request_id=getattr(request.state, "request_id", None),
+    )
     return disk_set_model_to_response(disk_set)
 
 
@@ -275,6 +284,7 @@ def delete_disk_set_endpoint(
     disk_set_id: int,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
+    request: Request,
 ) -> Response | JSONResponse:
     try:
         delete_user_disk_set(db, disk_set_id, current_user)
@@ -282,4 +292,10 @@ def delete_disk_set_endpoint(
         return _disk_set_not_found_response()
     except DiskSetValidationError as error:
         return _validation_error_response(str(error))
+    log_audit_event(
+        "disk_set.deleted",
+        user_id=current_user.id,
+        disk_set_id=disk_set_id,
+        request_id=getattr(request.state, "request_id", None),
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -3,6 +3,7 @@
 Все эндпоинты имеют префикс `/api/v1`.
 
 Базовый `openapi.json`: `http://localhost:8000/openapi.json`.
+Инструментальные маршруты `/docs`, `/redoc`, `/openapi.json` не входят в business API.
 
 ## Endpoints
 
@@ -90,9 +91,11 @@
 - `422` возвращает FastAPI schema validation.
 - `429` возвращает `RATE_LIMIT_EXCEEDED`.
 - `503` может прийти как `RATE_LIMITER_UNAVAILABLE` или как `ready: not_ready`.
+- Rate limit хранится в Redis, при недоступности Redis используется memory fallback или `503` в зависимости от режима.
 - `204` не содержит body для `auth/logout` и `disk-sets/delete`.
 - CORS и security headers выставляются на HTTP layer.
 - `/ready` проверяет БД, миграции и seed default disk set.
+- HTTPS proxy и короткий runtime runbook: см. [`docs/runtime.md`](./runtime.md).
 
 ## Curl Examples
 
