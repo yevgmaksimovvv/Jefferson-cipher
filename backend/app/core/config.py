@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     TRUSTED_PROXY_IPS: str = ""
     ENABLE_HSTS: bool = False
     HSTS_MAX_AGE_SECONDS: int = 31536000
+    WEB_COOKIE_SECURE: bool = False
+    WEB_COOKIE_SAMESITE: str = "lax"
+    WEB_ACCESS_COOKIE_NAME: str = "web_access_token"
+    WEB_REFRESH_COOKIE_NAME: str = "web_refresh_token"
+    WEB_CSRF_COOKIE_NAME: str = "web_csrf_token"
     BACKEND_CORS_ORIGINS: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: list(DEFAULT_BACKEND_CORS_ORIGINS)
     )
@@ -62,6 +67,13 @@ class Settings(BaseSettings):
     @field_validator("RATE_LIMIT_STORAGE", mode="before")
     @classmethod
     def normalize_rate_limit_storage(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
+
+    @field_validator("WEB_COOKIE_SAMESITE", mode="before")
+    @classmethod
+    def normalize_web_cookie_samesite(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.strip().lower()
         return value
@@ -128,6 +140,8 @@ class Settings(BaseSettings):
             )
         if self.HSTS_MAX_AGE_SECONDS <= 0:
             raise ValueError("HSTS_MAX_AGE_SECONDS must be greater than 0")
+        if self.WEB_COOKIE_SAMESITE not in {"lax", "strict", "none"}:
+            raise ValueError("WEB_COOKIE_SAMESITE must be one of: lax, strict, none")
 
         return self
 

@@ -9,6 +9,8 @@ docker compose up -d
 docker compose down
 ```
 
+Веб-интерфейс обслуживается бекендом по пути `/`, статические файлы размещаются бекендом, отдельного фронтенд‑сервиса или CDN не требуется.
+
 ## Runtime smoke
 ```bash
 bash scripts/smoke/compose_runtime_smoke.sh
@@ -19,6 +21,7 @@ bash scripts/smoke/compose_runtime_smoke.sh
 - backend-init migrations + seed;
 - backend health и ready;
 - Redis limiter availability;
+- web forms CSRF token flow;
 - direct backend HTTP;
 - nginx HTTP/HTTPS proxy;
 - CORS preflight;

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="mx-auto grid max-w-4xl gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+    <div class="space-y-4 py-4 sm:py-8 lg:py-16">
+      <p class="text-xs font-semibold uppercase tracking-[0.32em] text-sky-300">Web auth</p>
+      <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Log in to access private disk sets.</h1>
+      <p class="max-w-xl text-sm leading-7 text-slate-300 sm:text-base">
+        Access and refresh tokens stay in HttpOnly cookies. The HTML never renders token values.
+      </p>
+    </div>
+
+    <div class="rounded-[2rem] border border-white/10 bg-white/95 p-6 text-slate-900 shadow-2xl shadow-slate-950/30 backdrop-blur sm:p-8">
+      <form method="post" action="/login" class="space-y-5" data-disable-on-submit>
+        {% include "partials/csrf_input.html" %}
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" value="{{ form.email }}" class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-200">
+          {% set message = field_errors.get("email") if field_errors else None %}
+          {% include "partials/field_error.html" %}
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-200">
+          {% set message = field_errors.get("password") if field_errors else None %}
+          {% include "partials/field_error.html" %}
+        </div>
+        <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300">
+          Sign in
+        </button>
+      </form>
+      <p class="mt-6 text-sm text-slate-600">
+        New here?
+        <a href="/register" class="font-semibold text-sky-700 hover:text-sky-800">Create an account</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

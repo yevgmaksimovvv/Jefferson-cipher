@@ -24,6 +24,10 @@ python -m alembic upgrade head
 - Nginx HTTPS proxy: https://localhost:8443
 - Health endpoint: /api/v1/health
 
+## Web UI
+- http://localhost:8000/
+- https://localhost:8443/
+
 ## Документация
 - [API](docs/api.md): HTTP contract, error codes и curl-примеры.
 - [Runtime](docs/runtime.md): конфигурация и эксплуатация.

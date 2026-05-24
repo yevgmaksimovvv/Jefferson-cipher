@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | Jefferson Cipher Service</title>
+    <script src="{{ request.url_for('static', path='vendor/tailwind.min.js') }}"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: {
+                950: "#06101f",
+                900: "#091527",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <script defer src="{{ request.url_for('static', path='vendor/alpine-shim.js') }}"></script>
+    <script defer src="{{ request.url_for('static', path='vendor/htmx-shim.js') }}"></script>
+    <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}">
+    <script defer src="{{ request.url_for('static', path='app.js') }}"></script>
+  </head>
+  <body class="min-h-full bg-ink-950 text-slate-100">
+    <div class="pointer-events-none fixed inset-0 overflow-hidden">
+      <div class="absolute left-0 top-0 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl"></div>
+      <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl"></div>
+    </div>
+    <div class="relative min-h-screen">
+      {% include "partials/nav.html" %}
+      <main class="mx-auto w-full max-w-7xl px-4 pb-14 pt-6 sm:px-6 lg:px-8">
+        {% include "partials/alerts.html" %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,15 +1,20 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
 from app.core.rate_limit import RateLimiterUnavailable, RateLimitExceeded
 from app.core.request_id import RequestIdMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.web.routes import router as web_router
 
 settings = get_settings()
+WEB_STATIC_DIR = Path(__file__).resolve().parent / "web" / "static"
 
 
 app = FastAPI(
@@ -54,6 +59,7 @@ app.add_middleware(
 )
 app.add_middleware(RequestIdMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.mount("/static", StaticFiles(directory=WEB_STATIC_DIR), name="static")
 
 
 @app.exception_handler(RateLimitExceeded)
@@ -91,6 +97,7 @@ async def rate_limiter_unavailable_handler(
 
 
 app.include_router(api_v1_router)
+app.include_router(web_router)
 
 _OPTIONAL_AUTH_OPENAPI_PATHS = {
     "/api/v1/disk-sets": {"get"},

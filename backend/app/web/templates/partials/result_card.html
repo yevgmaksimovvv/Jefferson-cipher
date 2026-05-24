@@ -1,0 +1,67 @@
+<aside id="cipher-result" class="rounded-[2rem] border border-white/10 bg-white/95 p-5 text-slate-900 shadow-2xl shadow-slate-950/30 backdrop-blur sm:p-7">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-sky-700">Result</p>
+      <h2 class="mt-2 text-xl font-semibold text-slate-950">Cipher output</h2>
+    </div>
+    {% if result %}
+      <button type="button" class="inline-flex items-center rounded-2xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-copy-button data-copy-target="cipher-output">
+        Copy output
+      </button>
+    {% endif %}
+  </div>
+
+  {% if alert %}
+    <div class="mt-5 rounded-2xl border px-4 py-3 text-sm {% if alert.kind == 'success' %}border-emerald-400/20 bg-emerald-50 text-emerald-800{% else %}border-rose-400/20 bg-rose-50 text-rose-800{% endif %}">
+      {{ alert.message }}
+    </div>
+  {% endif %}
+
+  {% if result %}
+    <div class="mt-5 space-y-5">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Output</p>
+        <pre id="cipher-output" class="mt-2 whitespace-pre-wrap break-words rounded-2xl bg-slate-950 px-4 py-4 text-sm leading-6 text-slate-100">{{ result.text }}</pre>
+      </div>
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Normalized text</p>
+        <pre class="mt-2 whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-800">{{ result.normalized_text }}</pre>
+      </div>
+      <details class="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <summary class="cursor-pointer list-none text-sm font-semibold text-slate-800">Trace</summary>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full text-left text-xs text-slate-600">
+            <thead class="border-b border-slate-200 text-[0.7rem] uppercase tracking-[0.24em] text-slate-500">
+              <tr>
+                <th class="py-2 pr-3">Block</th>
+                <th class="py-2 pr-3">Char</th>
+                <th class="py-2 pr-3">Disk</th>
+                <th class="py-2 pr-3">In</th>
+                <th class="py-2 pr-3">Out</th>
+                <th class="py-2 pr-3">Offset</th>
+                <th class="py-2 pr-3">Mode</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for step in result.trace %}
+                <tr class="border-b border-slate-200/70 last:border-0">
+                  <td class="py-2 pr-3">{{ step.block_index }}</td>
+                  <td class="py-2 pr-3">{{ step.char_index }}</td>
+                  <td class="py-2 pr-3">{{ step.disk_id }}</td>
+                  <td class="py-2 pr-3">{{ step.input_char }}</td>
+                  <td class="py-2 pr-3">{{ step.output_char }}</td>
+                  <td class="py-2 pr-3">{{ step.offset }}</td>
+                  <td class="py-2 pr-3">{{ step.mode }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  {% else %}
+    <div class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+      Run a cipher operation to see the result here.
+    </div>
+  {% endif %}
+</aside>
