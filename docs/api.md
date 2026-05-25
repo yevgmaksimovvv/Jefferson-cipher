@@ -129,11 +129,5 @@ curl -s \
 curl -s "http://localhost:8000/api/v1/disk-sets?limit=50&offset=0"
 ```
 
-## Что не входит в этот документ
-* не описывает Web UI;
-* не заменяет `/openapi.json`;
-* не описывает runtime-настройки;
-* не является security audit.
-
 Runtime и локальный запуск: [`docs/runtime.md`](./runtime.md).
 Архитектурные границы: [`docs/architecture.md`](./architecture.md).

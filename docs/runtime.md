@@ -25,9 +25,6 @@ curl -s http://localhost:8000/api/v1/ready
 docker compose down
 ```
 
-> [!WARNING]
-> Не используйте `docker compose down -v`, если нужно сохранить данные. Обычный `docker compose down` не удаляет volumes.
-
 ## Адреса
 
 | Назначение | URL |
@@ -54,19 +51,19 @@ Web UI обслуживается `backend`-приложением. Статик
 bash scripts/smoke/compose_runtime_smoke.sh
 ```
 
-| Проверяет | Не делает |
-| --- | --- |
-| Postgres health | не удаляет `volumes` |
-| `backend-init` migrations + seed | не выполняет destructive cleanup |
-| `backend` health/ready | не заменяет полный `pytest` |
-| Redis limiter | |
-| Web UI CSRF flow | |
-| nginx HTTP/HTTPS | |
-| CORS preflight | |
-| security headers | |
-| OpenAPI | |
-| rate limit 429 | |
-| отсутствие случайно изменённых `.env` и cert/key файлов | |
+| Проверяет |
+| --- |
+| Postgres health |
+| `backend-init` (миграции + seed) |
+| `backend` (health/ready) |
+| Redis limiter |
+| Web UI (CSRF flow) |
+| Nginx (HTTP/HTTPS) |
+| CORS preflight |
+| Security headers |
+| OpenAPI |
+| Rate limit 429 |
+| Отсутствие случайных изменений в `.env` и cert/key |
 
 ## Сервисы
 

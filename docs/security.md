@@ -6,7 +6,7 @@
 ![Rate limit](https://img.shields.io/badge/rate%20limit-Redis%20or%20memory-F59E0B)
 ![HTTPS](https://img.shields.io/badge/HTTPS-nginx-0EA5E9)
 
-Документ фиксирует фактические security-механизмы Jefferson Cipher Service. Это не внешний аудит и не замена настройкам production-инфраструктуры.
+Security-механизмы Jefferson Cipher Service.
 
 | Область | Реализация | Где смотреть |
 | --- | --- | --- |
@@ -16,6 +16,7 @@
 | HTTPS | nginx terminates TLS | `nginx/`, `docs/runtime.md` |
 | CORS | `BACKEND_CORS_ORIGINS` | `backend/app/core/config.py` |
 | Audit logs | logger `app.audit` | `backend/app/core/audit.py` |
+
 
 > [!IMPORTANT]
 > Источник истины по маршрутам API — `/openapi.json` и код `backend/app/api`. Этот документ описывает security-поведение, а не полный API-контракт.
@@ -84,13 +85,6 @@
 
 * события безопасности пишутся в logger `app.audit`;
 * доступны через `docker compose logs backend`.
-
-## Что не гарантируется
-
-* документ не является внешним security audit;
-* не описывает production hardening полностью;
-* не гарантирует безопасность инфраструктуры вне `docker-compose`;
-* не описывает процесс ротации секретов.
 
 ## Быстрые проверки
 
