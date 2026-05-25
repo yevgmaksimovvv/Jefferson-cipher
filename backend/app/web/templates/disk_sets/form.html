@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="form-page disk-set-form-page">
+    <div class="page-header">
+      <h1 class="page-title">
+        {% if mode == 'edit' %}
+          Редактирование набора
+        {% else %}
+          Новый набор
+        {% endif %}
+      </h1>
+      <p class="page-subtitle">Каждый диск: номер, двоеточие и перестановка полного алфавита без пробелов.</p>
+    </div>
+
+    <div class="form-card form-card-wide">
+      <form method="post" action="{% if mode == 'edit' %}/disk-sets/{{ disk_set_id }}/edit{% else %}/disk-sets{% endif %}" class="stack gap-lg" data-disable-on-submit>
+        {% include "partials/csrf_input.html" %}
+        {% if field_errors and field_errors.get("form") %}
+          <div class="alert alert-error">
+            {{ field_errors.get("form") }}
+          </div>
+        {% endif %}
+
+        <div class="form-field">
+          <label for="name" class="form-label">Название</label>
+          <input id="name" name="name" value="{{ form.name }}" class="form-input">
+          {% set message = field_errors.get("name") if field_errors else None %}
+          {% include "partials/field_error.html" %}
+        </div>
+
+        <div class="form-field">
+          <label for="slug" class="form-label">Идентификатор</label>
+          <input id="slug" name="slug" value="{{ form.slug }}" class="form-input form-mono">
+          {% set message = field_errors.get("slug") if field_errors else None %}
+          {% include "partials/field_error.html" %}
+        </div>
+
+        <div class="form-field">
+          <label for="alphabet" class="form-label">Алфавит</label>
+          <input
+            id="alphabet"
+            name="alphabet"
+            value="{{ form.alphabet }}"
+            maxlength="26"
+            class="form-input form-mono form-uppercase"
+            data-alphabet-input
+          >
+          {% set message = field_errors.get("alphabet") if field_errors else None %}
+          {% include "partials/field_error.html" %}
+        </div>
+
+        <div class="form-field">
+          <label for="disks" class="form-label">Диски</label>
+          <div class="disk-generator" data-disk-generator>
+            <div class="disk-generator-row">
+              <div class="form-field">
+                <label for="disk-count" class="form-label">Количество дисков</label>
+                <input
+                  id="disk-count"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value="36"
+                  class="form-input"
+                  data-disk-count-input
+                >
+              </div>
+              <div class="disk-generator-actions">
+                <button type="button" class="btn btn-secondary" data-generate-disks-button>
+                  Сгенерировать диски
+                </button>
+              </div>
+            </div>
+            <p class="disk-generator-help">Заполнит поле валидными перестановками текущего алфавита.</p>
+            <p class="disk-generator-error field-error" role="alert" aria-live="polite" data-disk-generator-error hidden></p>
+          </div>
+          <textarea
+            id="disks"
+            name="disks"
+            rows="8"
+            class="form-input form-textarea disk-textarea form-mono"
+            data-disks-textarea
+          >{{ form.disks }}</textarea>
+          {% set message = field_errors.get("disks") if field_errors else None %}
+          {% if not message and field_errors %}
+            {% set message = field_errors.get("form") %}
+          {% endif %}
+          {% include "partials/field_error.html" %}
+          <details class="example-box">
+            <summary class="example-summary">Показать пример</summary>
+            <pre class="example-code">1:ABCDEFGHIJKLMNOPQRSTUVWXYZ
+2:BCDEFGHIJKLMNOPQRSTUVWXYZA
+3:CDEFGHIJKLMNOPQRSTUVWXYZAB
+4:DEFGHIJKLMNOPQRSTUVWXYZABC</pre>
+          </details>
+        </div>
+
+        <div class="stack gap-md">
+          <button type="submit" class="btn btn-primary btn-full">
+            {% if mode == 'edit' %}Сохранить{% else %}Создать набор{% endif %}
+          </button>
+          <a href="/disk-sets" class="btn btn-secondary btn-full">К списку</a>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

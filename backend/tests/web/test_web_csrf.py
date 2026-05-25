@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from app.core.security import hash_password
-from app.db.models import UserModel
+from app.db.models import DiskModel, DiskSetModel, UserModel
 
 
 def _create_user(db_session, email: str, password: str = "password123") -> UserModel:
@@ -46,14 +46,44 @@ def test_web_base_uses_local_static_assets(db_client) -> None:
     response = db_client.get("/")
 
     assert response.status_code == 200
+    assert 'href="/static/app.css"' in response.text
+    assert 'src="/static/app.js"' in response.text
+    assert 'src="/static/vendor/htmx-shim.js"' in response.text
+    assert 'src="/static/vendor/alpine-shim.js"' in response.text
+    assert "http://localhost/static" not in response.text
+    assert "https://localhost/static" not in response.text
     assert "https://cdn" not in response.text
-    assert "vendor/htmx-shim.js" in response.text
-    assert "vendor/alpine-shim.js" in response.text
-    assert "static/app.css" in response.text
 
 
 def test_web_post_routes_require_csrf(db_session, db_client) -> None:
-    _create_user(db_session, "csrf@example.com")
+    user = _create_user(db_session, "csrf@example.com")
+    seed_login_page = db_client.get("/login")
+    login_csrf = _csrf_token_from_html(seed_login_page.text)
+    login_response = db_client.post(
+        "/login",
+        data={
+            "email": user.email,
+            "password": "password123",
+            "csrf_token": login_csrf,
+        },
+        follow_redirects=False,
+    )
+    assert login_response.status_code == 303
+
+    private_disk_set = DiskSetModel(
+        name="Private CSRF Set",
+        slug="private-csrf-set",
+        owner_id=user.id,
+        alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        disks=[
+            DiskModel(position=1, sequence="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            DiskModel(position=2, sequence="BCDEFGHIJKLMNOPQRSTUVWXYZA"),
+            DiskModel(position=3, sequence="CDEFGHIJKLMNOPQRSTUVWXYZAB"),
+            DiskModel(position=4, sequence="DEFGHIJKLMNOPQRSTUVWXYZABC"),
+        ],
+    )
+    db_session.add(private_disk_set)
+    db_session.commit()
 
     login_response = db_client.post(
         "/login",
@@ -80,11 +110,40 @@ def test_web_post_routes_require_csrf(db_session, db_client) -> None:
             "disk_set_id": "1",
             "disk_order": "1,2,3,4",
             "offset": "0",
-            "include_trace": "",
         },
         follow_redirects=False,
     )
     assert cipher_response.status_code == 403
+
+    disk_sets_create_response = db_client.post(
+        "/disk-sets",
+        data={
+            "name": "New Set",
+            "slug": "new-set",
+            "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "disks": "1:ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        },
+        follow_redirects=False,
+    )
+    assert disk_sets_create_response.status_code == 403
+
+    disk_sets_edit_response = db_client.post(
+        f"/disk-sets/{private_disk_set.id}/edit",
+        data={
+            "name": "Private CSRF Set",
+            "slug": "private-csrf-set",
+            "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "disks": "1:ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        },
+        follow_redirects=False,
+    )
+    assert disk_sets_edit_response.status_code == 403
+
+    disk_sets_delete_response = db_client.post(
+        f"/disk-sets/{private_disk_set.id}/delete",
+        follow_redirects=False,
+    )
+    assert disk_sets_delete_response.status_code == 403
 
 
 def test_invalid_csrf_is_rejected(db_session, db_client) -> None:
@@ -103,7 +162,7 @@ def test_invalid_csrf_is_rejected(db_session, db_client) -> None:
     )
 
     assert response.status_code == 403
-    assert "Invalid CSRF token." in response.text
+    assert "Неверный CSRF-токен." in response.text
 
 
 def test_valid_csrf_login_sets_auth_cookies(db_session, db_client) -> None:
@@ -142,6 +201,11 @@ def test_web_html_renders_only_csrf_hidden_input(db_client) -> None:
         assert 'name="csrf_token"' in response.text
         assert "access_token" not in response.text
         assert "refresh_token" not in response.text
+
+    response = db_client.get("/disk-sets")
+    assert response.status_code == 200
+    assert "access_token" not in response.text
+    assert "refresh_token" not in response.text
 
 
 def test_api_login_works_without_csrf(db_session, db_client) -> None:

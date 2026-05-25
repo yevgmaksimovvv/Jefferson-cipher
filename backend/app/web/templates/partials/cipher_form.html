@@ -1,0 +1,95 @@
+<div class="form-card card">
+  <form
+    hx-post="/cipher"
+    hx-target="#cipher-workspace"
+    hx-swap="outerHTML"
+    class="cipher-form"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="explanation_open" value="{{ '1' if form.explanation_open else '0' }}" data-explanation-open-input>
+
+    <div class="form-grid-2 form-grid">
+      <label class="form-choice">
+        <input
+          type="radio"
+          name="mode"
+          value="encrypt"
+          {% if form.mode == 'encrypt' %}checked{% endif %}
+          class="choice-input"
+        >
+        <span class="choice-text">Зашифровать</span>
+      </label>
+      <label class="form-choice">
+        <input
+          type="radio"
+          name="mode"
+          value="decrypt"
+          {% if form.mode == 'decrypt' %}checked{% endif %}
+          class="choice-input"
+        >
+        <span class="choice-text">Расшифровать</span>
+      </label>
+    </div>
+
+    <div class="form-field">
+      <label for="text" class="form-label">Входной текст</label>
+      <textarea
+        id="text"
+        name="text"
+        placeholder="Введите текст для обработки..."
+        class="form-textarea form-mono form-uppercase"
+      >{{ form.text }}</textarea>
+      {% set message = field_errors.get("text") if field_errors else None %}
+      {% include "partials/field_error.html" %}
+    </div>
+
+    <div class="form-field">
+      <label for="disk_set_id" class="form-label">Набор дисков</label>
+      <select id="disk_set_id" name="disk_set_id" class="form-select">
+        {% for ds in disk_sets %}
+          <option value="{{ ds.id }}" {% if ds.selected %}selected{% endif %}>
+            {{ ds.name }} ({{ ds.badge_label }})
+          </option>
+        {% endfor %}
+      </select>
+      {% set message = field_errors.get("disk_set_id") if field_errors else None %}
+      {% include "partials/field_error.html" %}
+    </div>
+
+    <div class="form-grid form-grid-split">
+      <div class="form-field">
+        <label for="offset" class="form-label">Смещение</label>
+        <input
+          type="text"
+          id="offset"
+          name="offset"
+          value="{{ form.offset }}"
+          inputmode="numeric"
+          pattern="-?[0-9]*"
+          autocomplete="off"
+          class="form-input"
+        >
+        {% set message = field_errors.get("offset") if field_errors else None %}
+        {% include "partials/field_error.html" %}
+      </div>
+      <div class="form-field">
+        <label for="disk_order" class="form-label">Порядок дисков</label>
+        <textarea
+          id="disk_order"
+          name="disk_order"
+          placeholder="1,2,3,4"
+          rows="2"
+          class="form-input form-textarea form-mono disk-order-input"
+        >{{ form.disk_order }}</textarea>
+        {% set message = field_errors.get("disk_order") if field_errors else None %}
+        {% include "partials/field_error.html" %}
+      </div>
+    </div>
+
+    <div class="stack gap-md">
+      <button type="submit" class="btn btn-primary btn-full">
+        Выполнить операцию
+      </button>
+    </div>
+  </form>
+</div>

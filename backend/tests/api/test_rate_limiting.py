@@ -40,6 +40,11 @@ class CapturingRedisClient:
         return [count, ttl_seconds]
 
 
+@pytest.fixture(autouse=True)
+def _freeze_rate_limit_time(monkeypatch):
+    monkeypatch.setattr(rate_limit_module.time, "time", lambda: 120.0)
+
+
 def _fresh_app(monkeypatch, *, redis_unavailable: bool = False):
     monkeypatch.setenv("RATE_LIMIT_STORAGE", "redis")
     monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")

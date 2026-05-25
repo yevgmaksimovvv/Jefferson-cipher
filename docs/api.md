@@ -1,103 +1,103 @@
 # API Reference
 
-Все эндпоинты имеют префикс `/api/v1`.
+![API](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)
+![Version](https://img.shields.io/badge/version-v1-2563EB)
+![Auth](https://img.shields.io/badge/auth-Bearer%20JWT-7C3AED)
+![OpenAPI](https://img.shields.io/badge/OpenAPI-available-85EA2D?logo=openapiinitiative&logoColor=black)
+![Rate limit](https://img.shields.io/badge/rate%20limit-enabled-F59E0B)
 
-Базовый `openapi.json`: `http://localhost:8000/openapi.json`.
-Инструментальные маршруты `/docs`, `/redoc`, `/openapi.json` не входят в business API.
+Документ фиксирует фактический HTTP API Jefferson Cipher Service. Источник истины для машинной схемы — `/openapi.json`; этот файл нужен как человекочитаемая карта контрактов.
+
+## Базовая информация
+
+| Параметр | Значение |
+| --- | --- |
+| Префикс business API | `/api/v1` |
+| OpenAPI schema | `/openapi.json` |
+| Swagger UI | `/docs` |
+| ReDoc | `/redoc` |
+| Web UI | не входит в business API |
+
+> [!IMPORTANT]
+> `/docs`, `/redoc` и `/openapi.json` — инструментальные маршруты. Они не считаются business API.
+
+## Формат ошибок
+
+| Случай | HTTP status | Формат |
+| --- | --- | --- |
+| Ошибка домена/сервиса | `400` | `{"error":{"code","message"}}` |
+| Ошибка валидации схемы | `422` | стандартный FastAPI `detail` |
+| Не авторизован | `401` | `{"detail":"Not authenticated"}` |
+| Ресурс не найден | `404` | `{"detail":"Not found"}` |
+| Rate limit | `429` | `RATE_LIMIT_EXCEEDED` |
+| Rate limiter недоступен | `503` | `RATE_LIMITER_UNAVAILABLE` |
+
+## Аутентификация
+
+* API требует `Bearer` token (JWT) для защищенных эндпоинтов.
+* Web UI использует cookies/CSRF, которые не относятся к JSON API.
+* `owner_id` назначается сервером автоматически, в запросах не принимается.
+
+> [!WARNING]
+> Чужие частные `disk sets` возвращаются с `404`, чтобы не раскрывать существование ресурса.
 
 ## Endpoints
 
 ### Health
-- `GET /api/v1/health` - liveness probe.
-  - `200`: сервис жив.
-- `GET /api/v1/ready` - readiness probe.
-  - `200`: `{"status":"ready", ...}`.
-  - `503`: `{"status":"not_ready", ...}` если БД, миграции или seed не готовы.
+
+| Метод | Путь | Auth | Успех | Назначение |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/health` | Нет | `200` | liveness probe |
+| `GET` | `/api/v1/ready` | Нет | `200/503` | readiness probe |
+
+* `/ready` проверяет БД, миграции, seed и rate limiter.
 
 ### Auth
-- `POST /api/v1/auth/register`
-  - `201`: пользователь создан.
-  - `409`: email уже зарегистрирован.
-  - `429`: rate limit.
-- `POST /api/v1/auth/login`
-  - `200`: возвращает access/refresh token pair.
-  - `401`: неверный email или пароль.
-  - `429`: rate limit.
-- `POST /api/v1/auth/refresh`
-  - `200`: возвращает новый access/refresh token pair.
-  - `401`: refresh token недействителен.
-  - `429`: rate limit.
-- `POST /api/v1/auth/logout`
-  - `204`: без тела ответа.
-  - `401`: refresh token недействителен.
-  - `429`: rate limit.
+
+| Метод | Путь | Auth | Успех | Назначение |
+| --- | --- | --- | --- | --- |
+| `POST` | `/api/v1/auth/register` | Нет | `201` | регистрация |
+| `POST` | `/api/v1/auth/login` | Нет | `200` | login |
+| `POST` | `/api/v1/auth/refresh` | Да | `200` | обновление токена |
+| `POST` | `/api/v1/auth/logout` | Да | `204` | logout |
+
+* Ошибки: `401`, `409`, `429`, `422`.
 
 ### Users
-- `GET /api/v1/users/me`
-  - `200`: публичный профиль текущего пользователя.
-  - `401`: bearer token отсутствует или недействителен.
+
+| Метод | Путь | Auth | Успех | Назначение |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/users/me` | Да | `200` | текущий профиль |
 
 ### Cipher
-- `POST /api/v1/cipher/encrypt`
-- `POST /api/v1/cipher/decrypt`
-  - `200`: результат шифрования/дешифрования.
-  - `400`: service/domain error в формате `{"error":{"code","message"}}`.
-  - `429`: rate limit.
-- `POST /api/v1/cipher/encrypt/from-disk-set`
-- `POST /api/v1/cipher/decrypt/from-disk-set`
-  - `200`: результат шифрования/дешифрования.
-  - `400`: service/domain error в формате `{"error":{"code","message"}}`.
-  - `401`: bearer token недействителен.
-  - `404`: чужой private disk set скрывается как not found.
-  - `429`: rate limit.
+
+| Метод | Путь | Auth | Успех | Назначение |
+| --- | --- | --- | --- | --- |
+| `POST` | `/api/v1/cipher/encrypt` | Нет | `200` | шифрование (config) |
+| `POST` | `/api/v1/cipher/decrypt` | Нет | `200` | дешифрование (config) |
+| `POST` | `/api/v1/cipher/encrypt/from-disk-set` | Да | `200` | шифрование (disk set) |
+| `POST` | `/api/v1/cipher/decrypt/from-disk-set` | Да | `200` | дешифрование (disk set) |
 
 ### Disk sets
-- `GET /api/v1/disk-sets`
-  - `200`: list response без `total`/`meta`.
-  - `401`: bearer token недействителен.
-  - `limit`: default `50`, max `100`.
-  - `offset`: default `0`.
-- `GET /api/v1/disk-sets/{disk_set_id}`
-  - `200`: disk set details.
-  - `401`: bearer token недействителен.
-  - `404`: чужой private disk set скрывается как not found.
-- `POST /api/v1/disk-sets`
-  - `201`: disk set создан.
-  - `400`: validation/service error в формате `{"error":{"code","message"}}`.
-  - `401`: bearer token недействителен.
-  - `409`: duplicate slug.
-  - `429`: rate limit.
-- `PATCH /api/v1/disk-sets/{disk_set_id}`
-  - `200`: disk set обновлён.
-  - `400`: validation/service error в формате `{"error":{"code","message"}}`.
-  - `401`: bearer token недействителен.
-  - `404`: disk set не найден или не принадлежит пользователю.
-  - `409`: duplicate slug.
-  - `429`: rate limit.
-- `DELETE /api/v1/disk-sets/{disk_set_id}`
-  - `204`: без тела ответа.
-  - `400`: service error в формате `{"error":{"code","message"}}`.
-  - `401`: bearer token недействителен.
-  - `404`: disk set не найден или не принадлежит пользователю.
-  - `429`: rate limit.
 
-## Contract Notes
+| Метод | Путь | Auth | Успех | Назначение |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/disk-sets` | Да | `200` | список |
+| `GET` | `/api/v1/disk-sets/{id}` | Да | `200` | детали |
+| `POST` | `/api/v1/disk-sets` | Да | `201` | создание |
+| `PATCH` | `/api/v1/disk-sets/{id}` | Да | `200` | обновление |
+| `DELETE` | `/api/v1/disk-sets/{id}` | Да | `204` | удаление |
 
-- `owner_id` не принимается в request body. Он назначается сервером через текущего пользователя.
-- `public/system` disk sets имеют `owner_id=NULL`.
-- Anonymous видит только public/system disk sets.
-- Authenticated видит public/system + свои private disk sets.
-- Чужой private disk set возвращается как `404`, чтобы не раскрывать существование ресурса.
-- `422` возвращает FastAPI schema validation.
-- `429` возвращает `RATE_LIMIT_EXCEEDED`.
-- `503` может прийти как `RATE_LIMITER_UNAVAILABLE` или как `ready: not_ready`.
-- Rate limit хранится в Redis, при недоступности Redis используется memory fallback или `503` в зависимости от режима.
-- `204` не содержит body для `auth/logout` и `disk-sets/delete`.
-- CORS и security headers выставляются на HTTP layer.
-- `/ready` проверяет БД, миграции и seed default disk set.
-- HTTPS proxy и короткий runtime runbook: см. [`docs/runtime.md`](./runtime.md).
+* `list` (GET): default `limit=50`, max `limit=100`, default `offset=0`.
+* `owner_id` назначается сервером (NULL для public/system).
 
-## Curl Examples
+## Контракт disk sets
+
+* `public/system` имеют `owner_id=NULL`.
+* Anonymous видит только `public/system`.
+* Authenticated видит `public/system` + свои частные.
+
+## Curl-примеры
 
 ### Health
 ```bash
@@ -117,7 +117,23 @@ curl -s \
   -d '{"email":"user@example.com","password":"password123"}'
 ```
 
+### Current user
+```bash
+curl -s \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://localhost:8000/api/v1/users/me
+```
+
 ### List disk sets
 ```bash
 curl -s "http://localhost:8000/api/v1/disk-sets?limit=50&offset=0"
 ```
+
+## Что не входит в этот документ
+* не описывает Web UI;
+* не заменяет `/openapi.json`;
+* не описывает runtime-настройки;
+* не является security audit.
+
+Runtime и локальный запуск: [`docs/runtime.md`](./runtime.md).
+Архитектурные границы: [`docs/architecture.md`](./architecture.md).

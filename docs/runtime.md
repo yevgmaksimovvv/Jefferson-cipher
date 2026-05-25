@@ -1,99 +1,172 @@
 # Runtime
 
+![Docker Compose](https://img.shields.io/badge/runtime-Docker%20Compose-2496ED?logo=docker&logoColor=white)
+![Backend](https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white)
+![Database](https://img.shields.io/badge/database-PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Cache](https://img.shields.io/badge/cache-Redis-DC382D?logo=redis&logoColor=white)
+![Proxy](https://img.shields.io/badge/proxy-nginx-009639?logo=nginx&logoColor=white)
+
+Операторская памятка для локального запуска, проверки готовности и основных runtime-настроек Jefferson Cipher Service.
+
+| Раздел | Для чего |
+| --- | --- |
+| Быстрый запуск | поднять локальный контур |
+| Адреса | открыть backend, nginx и Web UI |
+| Smoke | проверить готовность окружения |
+| Runtime-настройки | Redis limiter, HTTPS, CORS, proxy headers |
+| Миграции | понять запуск через compose и host |
+
 ## Быстрый запуск
+
 ```bash
 docker compose up -d
-```
-Для остановки:
-```bash
+curl -s http://localhost:8000/api/v1/health
+curl -s http://localhost:8000/api/v1/ready
 docker compose down
 ```
 
-Веб-интерфейс обслуживается бекендом по пути `/`, статические файлы размещаются бекендом, отдельного фронтенд‑сервиса или CDN не требуется.
+> [!WARNING]
+> Не используйте `docker compose down -v`, если нужно сохранить данные. Обычный `docker compose down` не удаляет volumes.
+
+## Адреса
+
+| Назначение | URL |
+| --- | --- |
+| Backend HTTP | `http://localhost:8000` |
+| Nginx HTTP | `http://localhost:8080` |
+| Nginx HTTPS | `https://localhost:8443` |
+| Health | `http://localhost:8000/api/v1/health` |
+| Ready | `http://localhost:8000/api/v1/ready` |
+| OpenAPI | `http://localhost:8000/openapi.json` |
+
+## Web UI
+
+Web UI обслуживается `backend`-приложением. Статика отдаётся из `/static`, отдельный frontend-сервис не требуется. Формы Web UI используют CSRF.
+
+> [!TIP]
+> Для обычной локальной проверки достаточно открыть `https://localhost:8443/` или `http://localhost:8000/`.
 
 ## Runtime smoke
+
+Команда:
+
 ```bash
 bash scripts/smoke/compose_runtime_smoke.sh
 ```
 
-Проверяет:
-- Postgres health;
-- backend-init migrations + seed;
-- backend health и ready;
-- Redis limiter availability;
-- web forms CSRF token flow;
-- direct backend HTTP;
-- nginx HTTP/HTTPS proxy;
-- CORS preflight;
-- security headers;
-- OpenAPI inventory;
-- rate limit 429;
-- отсутствие изменённых `.env` и cert/key файлов в рабочем дереве.
-
-Не делает:
-- не удаляет volumes;
-- не выполняет destructive cleanup volumes;
-- не заменяет полный `pytest`.
-
-## Operator runbook
-- Health check: `curl -s http://localhost:8000/api/v1/health`
-- Ready check: `curl -s http://localhost:8000/api/v1/ready` and inspect `rate_limiter` (`memory`, `ok`, or `error`)
-- OpenAPI check: `curl -s http://localhost:8000/openapi.json`
-- CORS preflight: `curl -i -X OPTIONS http://localhost:8000/api/v1/health -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: GET'`
-- HTTPS health via 8443: `curl -k -s https://localhost:8443/api/v1/health`
-- Rate limit smoke: повторите один и тот же auth/cipher запрос до `429 RATE_LIMIT_EXCEEDED`.
-- Redis limiter unavailable behavior: при `RATE_LIMIT_STORAGE=redis` и недоступном Redis ожидается `503 RATE_LIMITER_UNAVAILABLE`.
-- Audit logs: logger `app.audit`, смотреть в `docker compose logs backend`.
+| Проверяет | Не делает |
+| --- | --- |
+| Postgres health | не удаляет `volumes` |
+| `backend-init` migrations + seed | не выполняет destructive cleanup |
+| `backend` health/ready | не заменяет полный `pytest` |
+| Redis limiter | |
+| Web UI CSRF flow | |
+| nginx HTTP/HTTPS | |
+| CORS preflight | |
+| security headers | |
+| OpenAPI | |
+| rate limit 429 | |
+| отсутствие случайно изменённых `.env` и cert/key файлов | |
 
 ## Сервисы
-- `postgres`: база данных.
-- `redis`: кэш для rate limiter.
-- `backend-init`: миграции БД.
-- `backend`: API приложение.
-- `nginx`: обратный прокси.
+
+| Сервис | Назначение |
+| --- | --- |
+| `postgres` | база данных |
+| `redis` | хранилище rate limiter |
+| `backend-init` | миграции и начальная инициализация |
+| `backend` | API и Web UI |
+| `nginx` | HTTP/HTTPS reverse proxy |
 
 ## Порты
-- 8000: direct backend HTTP.
-- 8080: nginx HTTP proxy.
-- 8443: nginx HTTPS proxy.
-- 5432: postgres.
 
-## HTTPS (local mode)
-- Self-signed сертификаты генерируются автоматически при старте.
-- Curl: используйте флаг `-k`.
-- Cert/key лежат в `nginx/certs`.
+| Порт | Сервис | Назначение |
+| --- | --- | --- |
+| 8000 | `backend` | direct backend HTTP |
+| 8080 | `nginx` | HTTP proxy |
+| 8443 | `nginx` | HTTPS proxy |
+| 5432 | `postgres` | база данных |
 
-## Custom certificates
-Для использования своих сертификатов:
-1. Выключите автогенерацию: `NGINX_GENERATE_SELF_SIGNED=false`.
-2. Укажите host-директорию с сертификатами: `NGINX_HOST_CERT_DIR=/путь/к/папке`.
-3. В этой папке должны быть файлы `fullchain.pem` и `privkey.pem`.
+## Основные проверки
 
-## Redis limiter
-- `RATE_LIMIT_STORAGE=auto` + `REDIS_URL` задан: используется Redis.
-- `RATE_LIMIT_STORAGE=auto` + `REDIS_URL` пустой: используется память (memory fallback).
-- `RATE_LIMIT_STORAGE=memory`: используется память, `REDIS_URL` не требуется.
-- `RATE_LIMIT_STORAGE=redis`: `REDIS_URL` обязателен.
-- `RATE_LIMIT_FAIL_OPEN=true` с Redis-режимом запрещён.
-- `RATE_LIMIT_STORAGE=redis` и Redis недоступен: `/ready` отдаёт `503` с `rate_limiter=error`, запросы отдают `503 RATE_LIMITER_UNAVAILABLE`.
+```bash
+docker compose ps
+docker compose logs backend
+curl -s http://localhost:8000/api/v1/health
+curl -s http://localhost:8000/api/v1/ready
+curl -s http://localhost:8000/openapi.json
+curl -k -s https://localhost:8443/api/v1/health
+```
+
+CORS:
+
+```bash
+curl -i -X OPTIONS http://localhost:8000/api/v1/health \
+  -H 'Origin: http://localhost:5173' \
+  -H 'Access-Control-Request-Method: GET'
+```
+
+## HTTPS
+
+### Local self-signed
+
+* self-signed сертификаты генерируются автоматически;
+* для `curl` используйте `-k`;
+* cert/key лежат в `nginx/certs`;
+* cert/key не должны случайно попадать в коммит.
+
+### Свои сертификаты
+
+1. `NGINX_GENERATE_SELF_SIGNED=false`
+2. `NGINX_HOST_CERT_DIR=/путь/к/папке`
+3. В папке должны быть `fullchain.pem` и `privkey.pem`.
+
+> [!IMPORTANT]
+> HSTS включайте только с валидным доверенным HTTPS-сертификатом. Для self-signed localhost оставляйте HSTS выключенным.
+
+## Redis rate limiter
+
+| Настройка | Поведение |
+| --- | --- |
+| `RATE_LIMIT_STORAGE=auto` + `REDIS_URL` задан | используется Redis |
+| `RATE_LIMIT_STORAGE=auto` + `REDIS_URL` пустой | используется memory fallback |
+| `RATE_LIMIT_STORAGE=memory` | используется память |
+| `RATE_LIMIT_STORAGE=redis` | Redis обязателен |
+
+* `RATE_LIMIT_FAIL_OPEN=true` с Redis-режимом запрещён.
+* Если Redis недоступен в `redis`-режиме, `/ready` возвращает 503, а защищённые запросы получают 503 `RATE_LIMITER_UNAVAILABLE`.
 
 ## Proxy headers
-- `TRUST_PROXY_HEADERS=true`: доверять заголовкам за прокси.
-- `TRUSTED_PROXY_IPS`: список доверенных IP. `*` оставлен как явный local/dev escape hatch только когда backend недоступен напрямую извне.
+
+| Переменная | Назначение |
+| --- | --- |
+| `TRUST_PROXY_HEADERS` | включает доверие proxy-заголовкам |
+| `TRUSTED_PROXY_IPS` | задаёт доверенные proxy IP |
+
+`*` допустим только как явный local/dev escape hatch.
 
 ## CORS
-- `BACKEND_CORS_ORIGINS`: задаётся в `.env`. Wildcard `*` запрещён.
 
-## HSTS
-- Выключен по умолчанию. Включать только при наличии валидного доверенного сертификата. Для self-signed localhost оставляйте `false`.
+* `BACKEND_CORS_ORIGINS` задаётся через `.env`.
+* Wildcard `*` запрещён.
 
-## Проверки
-- `docker compose config`
-- `curl -s http://localhost:8080/api/v1/health`
-- `curl -k https://localhost:8443/api/v1/health`
-- `pytest` (в папке backend)
+## Миграции
 
-## Работа с миграциями
-- Docker Compose/backend-init автоматически использует `DATABASE_URL`.
-- Для запуска миграций с хоста используйте explicit override:
-  `ALEMBIC_DATABASE_URL="$DATABASE_URL_LOCAL" ../.venv/bin/python -m alembic upgrade head`
+Docker Compose:
+`backend-init` выполняет миграции автоматически и использует `DATABASE_URL`.
+
+Host-запуск:
+
+```bash
+ALEMBIC_DATABASE_URL="$DATABASE_URL_LOCAL" ../.venv/bin/python -m alembic upgrade head
+```
+
+> [!CAUTION]
+> Не подменяйте контейнерный `DATABASE_URL` локальным host-URL внутри compose-сервисов.
+
+## Полный тестовый прогон
+
+```bash
+cd backend
+../.venv/bin/python -m pytest
+```

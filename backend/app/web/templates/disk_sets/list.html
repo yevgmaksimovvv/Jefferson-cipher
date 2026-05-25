@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="disk-page">
+    <div class="page-header page-header-split">
+      <div class="stack gap-sm">
+        <h1 class="page-title">Наборы дисков</h1>
+        <p class="page-subtitle">Используйте готовые наборы или создавайте свои.</p>
+      </div>
+      <div class="page-actions">
+        <a href="/cipher" class="btn btn-secondary">Открыть шифр</a>
+        {% if current_user %}
+          <a href="/disk-sets/new" class="btn btn-primary">Создать набор</a>
+        {% else %}
+          <a href="/login" class="btn btn-primary">Войти</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Мои наборы</h2>
+      </div>
+
+      {% if owned_disk_sets %}
+        <div class="disk-grid">
+          {% for disk_set in owned_disk_sets %}
+            {% include "disk_sets/disk_set_card.html" %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card card-muted empty-panel">
+          <div class="empty-icon">+</div>
+          <div class="empty-copy">
+            <h3 class="card-title">У вас пока нет личных наборов</h3>
+            <p class="card-text">Создайте набор, чтобы сохранить свой порядок дисков.</p>
+          </div>
+          <div class="card-actions">
+            {% if current_user %}
+              <a href="/disk-sets/new" class="btn btn-primary">Создать набор</a>
+            {% else %}
+              <a href="/login" class="btn btn-primary">Войти</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Доступные наборы</h2>
+      </div>
+
+      {% if public_disk_sets %}
+        <div class="disk-grid">
+          {% for disk_set in public_disk_sets %}
+            {% include "disk_sets/disk_set_card.html" %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card card-muted empty-panel">
+          <div class="empty-icon">+</div>
+          <div class="empty-copy">
+            <h3 class="card-title">Нет доступных наборов</h3>
+            <p class="card-text">Добавьте публичный или системный набор, чтобы он появился здесь.</p>
+          </div>
+          <div class="empty-actions"></div>
+        </div>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

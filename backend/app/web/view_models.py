@@ -22,7 +22,28 @@ class DiskSetOptionView:
     name: str
     slug: str
     badge: str
+    badge_label: str
     selected: bool = False
+
+
+@dataclass(slots=True)
+class DiskSetCardView:
+    id: int
+    name: str
+    slug: str
+    badge: str
+    badge_label: str
+    disks_count: int
+    alphabet: str
+    is_owned: bool = False
+
+
+@dataclass(slots=True)
+class DiskSetFormView:
+    name: str = ""
+    slug: str = ""
+    alphabet: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    disks: str = ""
 
 
 @dataclass(slots=True)
@@ -32,7 +53,7 @@ class CipherFormView:
     disk_set_id: int = 0
     disk_order: str = ""
     offset: int = 0
-    include_trace: bool = True
+    explanation_open: bool = False
 
 
 @dataclass(slots=True)
@@ -49,7 +70,17 @@ class CipherTraceStepView:
 
 
 @dataclass(slots=True)
+class CipherDiskInfoView:
+    id: int
+    sequence: str
+
+
+@dataclass(slots=True)
 class CipherResultView:
     text: str
-    normalized_text: str
+    mode: str = ""
+    disk_set_name: str = ""
+    disk_order: list[int] = field(default_factory=list)
+    offset: int = 0
+    disks: list[CipherDiskInfoView] = field(default_factory=list)
     trace: list[CipherTraceStepView] = field(default_factory=list)

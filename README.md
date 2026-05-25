@@ -1,35 +1,44 @@
 # Jefferson Cipher Service
 
-Сервис для работы с шифром Джефферсона.
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![SSR Web UI](https://img.shields.io/badge/Web%20UI-Jinja%20SSR-F59E0B)
+![No CDN](https://img.shields.io/badge/No-CDN-94A3B8)
+
+Веб-сервис для работы с шифром Джефферсона, включающий RESTful API и серверный Web UI.
 
 ## Быстрый запуск
 
-### Через Docker Compose
 ```bash
 docker compose up -d
 ```
 
-### Локальный backend (через .venv)
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e "backend/.[dev]"
-# Далее настроить .env и запустить миграции БД:
-python -m alembic upgrade head
-```
+> [!WARNING]
+> Не используйте `docker compose down -v`, если нужно сохранить локальные данные.
 
-## Адреса
-- Backend HTTP: http://localhost:8000
-- Nginx HTTP proxy: http://localhost:8080
-- Nginx HTTPS proxy: https://localhost:8443
-- Health endpoint: /api/v1/health
+## Основные адреса
+
+| Назначение | Адрес |
+| --- | --- |
+| Backend HTTP | `http://localhost:8000` |
+| Nginx HTTP | `http://localhost:8080` |
+| Nginx HTTPS | `https://localhost:8443` |
+| Healthcheck | `http://localhost:8000/api/v1/health` |
 
 ## Web UI
-- http://localhost:8000/
-- https://localhost:8443/
+* Интерфейс для работы с шифром через браузер.
+* Реализован на `Jinja` SSR внутри `FastAPI`.
+* Использует `CSRF` для защиты форм.
 
 ## Документация
-- [API](docs/api.md): HTTP contract, error codes и curl-примеры.
-- [Runtime](docs/runtime.md): конфигурация и эксплуатация.
-- [Security](docs/security.md): контракты безопасности.
-- Runtime smoke: `bash scripts/smoke/compose_runtime_smoke.sh`.
+
+| Раздел | Ссылка |
+| --- | --- |
+| API | [`docs/api.md`](docs/api.md) |
+| Runtime | [`docs/runtime.md`](docs/runtime.md) |
+| Security | [`docs/security.md`](docs/security.md) |
+| Architecture | [`docs/architecture.md`](docs/architecture.md) |
+| Testing | [`docs/testing.md`](docs/testing.md) |

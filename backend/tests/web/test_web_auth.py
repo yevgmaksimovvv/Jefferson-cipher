@@ -34,9 +34,23 @@ def _csrf_token_from_html(html: str) -> str:
 
 
 def test_web_home_login_register_render(db_client) -> None:
-    assert db_client.get("/").status_code == 200
-    assert db_client.get("/login").status_code == 200
-    assert db_client.get("/register").status_code == 200
+    home_response = db_client.get("/")
+    login_response = db_client.get("/login")
+    register_response = db_client.get("/register")
+
+    assert home_response.status_code == 200
+    assert "Шифр Джефферсона" in home_response.text
+    assert "Начать шифрование" in home_response.text
+    assert "Что можно сделать" in home_response.text
+    assert "API" not in home_response.text
+
+    assert login_response.status_code == 200
+    assert 'class="auth-card' in login_response.text
+    assert "hero-grid" not in login_response.text
+
+    assert register_response.status_code == 200
+    assert 'class="auth-card' in register_response.text
+    assert "hero-grid" not in register_response.text
 
 
 def test_web_register_creates_user_and_sets_http_only_cookies(
@@ -149,6 +163,6 @@ def test_invalid_login_shows_error_and_does_not_500(db_session, db_client) -> No
     )
 
     assert response.status_code == 200
-    assert "Invalid email or password." in response.text
+    assert "Неверный email или пароль." in response.text
     assert "access_token" not in response.text
     assert "refresh_token" not in response.text

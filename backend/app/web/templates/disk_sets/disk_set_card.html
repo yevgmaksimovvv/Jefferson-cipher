@@ -1,0 +1,30 @@
+<article class="disk-card card">
+  <div class="disk-card-top">
+    <div class="badge badge-{{ disk_set.badge }}">{{ disk_set.badge_label }}</div>
+    <h3 class="card-title">{{ disk_set.name }}</h3>
+  </div>
+
+  <dl class="card-metrics">
+    <div class="card-metric">
+      <dt>Дисков</dt>
+      <dd>{{ disk_set.disks_count }}</dd>
+    </div>
+    <div class="card-metric">
+      <dt>Алфавит</dt>
+      <dd class="mono-inline">{{ disk_set.alphabet }}</dd>
+    </div>
+  </dl>
+
+  <div class="disk-card-actions">
+    <a href="/cipher?disk_set_id={{ disk_set.id }}" class="btn btn-primary btn-full">Использовать</a>
+    {% if disk_set.is_owned %}
+      <div class="grid-two">
+        <a href="/disk-sets/{{ disk_set.id }}/edit" class="btn btn-secondary btn-full">Редактировать</a>
+        <form method="post" action="/disk-sets/{{ disk_set.id }}/delete" data-confirm-delete="Удалить набор {{ disk_set.name }}?">
+          {% include "partials/csrf_input.html" %}
+          <button type="submit" class="btn btn-danger btn-full">Удалить</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+</article>

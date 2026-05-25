@@ -1,0 +1,74 @@
+{% if result and result.trace %}
+  <section class="cipher-explanation">
+    <details class="explanation-details" data-persist-details="cipher-explanation" {% if form.explanation_open %}open{% endif %}>
+      <summary class="explanation-summary">
+        <div class="explanation-summary-main">
+          <div class="explanation-summary-title">Объяснение работы</div>
+          <div class="explanation-summary-subtitle">Порядок дисков, использованные диски и преобразование символов</div>
+        </div>
+        <div class="explanation-summary-action">
+          <span class="explanation-summary-show">Развернуть</span>
+          <span class="explanation-summary-hide">Свернуть</span>
+        </div>
+      </summary>
+
+      <div class="explanation-body">
+        <div class="explanation-side stack gap-lg">
+          <section class="explanation-section">
+            <h3 class="explanation-section-title">Порядок дисков</h3>
+            <div class="explanation-order-card">
+              <span class="explanation-meta-value-mono">{{ result.disk_order | join(', ') }}</span>
+            </div>
+          </section>
+
+          {% if result.disks %}
+            <section class="explanation-section">
+              <h3 class="explanation-section-title">Использованные диски</h3>
+              <div class="explanation-disk-grid-wrap">
+                <div class="explanation-disk-grid">
+                  {% set used_disk_ids = [] %}
+                  {% for step in result.trace %}
+                    {% if step.disk_id not in used_disk_ids %}
+                      {% set _ = used_disk_ids.append(step.disk_id) %}
+                    {% endif %}
+                  {% endfor %}
+
+                  {% for disk in result.disks %}
+                    {% if disk.id in used_disk_ids %}
+                      <div class="explanation-disk-chip">
+                        <div class="explanation-disk-chip-head">
+                          <strong>Диск №{{ disk.id }}</strong>
+                        </div>
+                        <code>{{ disk.sequence }}</code>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </section>
+          {% endif %}
+        </div>
+
+        <section class="explanation-section explanation-section-steps">
+          <h3 class="explanation-section-title">Преобразование символов</h3>
+          <div class="explanation-step-grid-wrap">
+            <div class="explanation-step-grid">
+              {% for step in result.trace %}
+                <div class="explanation-step-card">
+                  <div class="explanation-step-transform">
+                    <span class="step-input">{{ step.input_char }}</span>
+                    <span class="step-arrow">➔</span>
+                    <span class="step-output">{{ step.output_char }}</span>
+                  </div>
+                  <span class="explanation-step-meta">
+                    Диск №{{ step.disk_id }}
+                  </span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+      </div>
+    </details>
+  </section>
+{% endif %}

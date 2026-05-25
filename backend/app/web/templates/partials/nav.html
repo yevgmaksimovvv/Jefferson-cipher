@@ -1,46 +1,78 @@
-<header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur" data-mobile-nav>
-  <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-    <a href="/" class="flex items-center gap-3">
-      <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500/15 text-sm font-bold text-sky-300 ring-1 ring-inset ring-sky-400/20">JC</span>
-      <span class="text-sm font-semibold tracking-wide text-white sm:text-base">Jefferson Cipher Service</span>
+<header class="top-nav" data-mobile-nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <span class="nav-logo" aria-hidden="true">
+        <svg class="nav-logo-icon" viewBox="0 0 40 40" role="img" aria-hidden="true">
+          <circle cx="20" cy="20" r="15" fill="none" stroke="currentColor" stroke-width="2.2"></circle>
+          <circle cx="20" cy="20" r="10.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+          <circle cx="20" cy="20" r="5" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+          <circle cx="20" cy="20" r="1.6" fill="currentColor"></circle>
+          <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M20 3.5v3"></path>
+            <path d="M29.5 7.1l-1.7 2.5"></path>
+            <path d="M36.5 20h-3"></path>
+            <path d="M29.5 32.9l-1.7-2.5"></path>
+            <path d="M20 36.5v-3"></path>
+            <path d="M10.5 32.9l1.7-2.5"></path>
+            <path d="M3.5 20h3"></path>
+            <path d="M10.5 7.1l1.7 2.5"></path>
+          </g>
+        </svg>
+      </span>
+      <span class="nav-title">Шифр Джефферсона</span>
     </a>
 
-    <nav class="hidden items-center gap-2 md:flex">
+    <nav class="nav-links desktop-only" aria-label="Основная навигация">
       {% for link in nav_links %}
-        <a href="{{ link.href }}" class="rounded-2xl px-4 py-2 text-sm font-medium transition {% if link.active %}bg-white/10 text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
-          {{ link.label }}
-        </a>
+        {% if link.href not in ["/login", "/register"] %}
+          <a href="{{ link.href }}" class="nav-link{% if link.active %} nav-link-active{% endif %}">
+            {{ link.label }}
+          </a>
+        {% endif %}
       {% endfor %}
-      {% if current_user %}
-        <span class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200">{{ current_user.email }}</span>
-        <form method="post" action="/logout">
-          {% include "partials/csrf_input.html" %}
-          <button type="submit" class="rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400">Logout</button>
-        </form>
-      {% endif %}
     </nav>
 
-    <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-2 text-slate-200 md:hidden" data-mobile-nav-toggle aria-label="Toggle navigation">
-      <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <div class="nav-actions desktop-only">
+      {% if current_user %}
+        <span class="nav-user">{{ current_user.email }}</span>
+        <form method="post" action="/logout">
+          {% include "partials/csrf_input.html" %}
+          <button type="submit" class="btn btn-secondary">Выйти</button>
+        </form>
+      {% else %}
+        <a href="/login" class="btn btn-secondary">Войти</a>
+        <a href="/register" class="btn btn-primary">Регистрация</a>
+      {% endif %}
+    </div>
+
+    <button type="button" class="mobile-nav-toggle mobile-only btn btn-ghost" data-mobile-nav-toggle aria-label="Открыть навигацию">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
       </svg>
     </button>
   </div>
 
-  <div class="hidden border-t border-white/10 px-4 pb-4 md:hidden" data-mobile-nav-panel>
-    <div class="mx-auto flex max-w-7xl flex-col gap-2 pt-3">
+  <div class="mobile-nav-panel hidden" data-mobile-nav-panel>
+    <div class="nav-panel-inner">
       {% for link in nav_links %}
-        <a href="{{ link.href }}" class="rounded-2xl px-4 py-3 text-sm font-medium {% if link.active %}bg-white/10 text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
-          {{ link.label }}
-        </a>
+        {% if link.href not in ["/login", "/register"] %}
+          <a href="{{ link.href }}" class="nav-link{% if link.active %} nav-link-active{% endif %}">
+            {{ link.label }}
+          </a>
+        {% endif %}
       {% endfor %}
-      {% if current_user %}
-        <div class="rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200">{{ current_user.email }}</div>
-        <form method="post" action="/logout">
-          {% include "partials/csrf_input.html" %}
-          <button type="submit" class="w-full rounded-2xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-400">Logout</button>
-        </form>
-      {% endif %}
+      <div class="nav-panel-actions">
+        {% if current_user %}
+          <div class="nav-user">{{ current_user.email }}</div>
+          <form method="post" action="/logout">
+            {% include "partials/csrf_input.html" %}
+            <button type="submit" class="btn btn-secondary btn-full">Выйти</button>
+          </form>
+        {% else %}
+          <a href="/login" class="btn btn-secondary btn-full">Войти</a>
+          <a href="/register" class="btn btn-primary btn-full">Регистрация</a>
+        {% endif %}
+      </div>
     </div>
   </div>
 </header>

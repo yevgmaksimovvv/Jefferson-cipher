@@ -1,5 +1,5 @@
 {% if alert %}
-  <div class="mb-6 rounded-2xl border px-4 py-3 text-sm {% if alert.kind == 'success' %}border-emerald-400/20 bg-emerald-400/10 text-emerald-100{% else %}border-rose-400/20 bg-rose-400/10 text-rose-100{% endif %}">
+  <div class="alert {% if alert.kind == 'success' %}alert-success{% elif alert.kind == 'info' %}alert-info{% else %}alert-error{% endif %}" role="status">
     {{ alert.message }}
   </div>
 {% endif %}
